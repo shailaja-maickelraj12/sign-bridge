@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignBridge — Sign Language to Speech</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050508;
+    --surface: #0e0e14;
+    --surface2: #16161f;
+    --surface3: #1e1e2a;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --green: #00e5a0;
+    --green-dim: rgba(0,229,160,0.12);
+    --green-glow: rgba(0,229,160,0.3);
+    --amber: #ffb547;
+    --amber-dim: rgba(255,181,71,0.1);
+    --red: #ff5f6d;
+    --blue: #4d9fff;
+    --text: #eeeef5;
+    --text2: #8888aa;
+    --text3: #44445a;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Outfit', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(5,5,8,0.85);
+    backdrop-filter: blur(16px);
+    position: sticky;
+    top: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-mark {
+    width: 32px; height: 32px;
+    border: 1.5px solid var(--green);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--green);
+  }
+
+  .logo span { color: var(--green); }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: var(--mono);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+  }
+
+  .status-pill.ready { border-color: rgba(0,229,160,0.3); color: var(--green); }
+  .status-pill.detecting { border-color: rgba(255,181,71,0.3); color: var(--amber); }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .dot.pulse { animation: blink 1.2s ease-in-out infinite; }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .lang-toggle {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .lang-btn {
+    padding: 6px 14px;
+    background: transparent;
+    border: none;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .lang-btn.active { background: var(--green); color: #050508; }
+
+  /* ── LAYOUT ── */
+  main {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 0;
+    height: calc(100vh - 57px);
+  }
+
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; height: auto; }
+  }
+
+  /* ── LEFT: CAMERA ── */
+  .camera-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    background: #000;
+  }
+
+  .camera-wrap {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #videoEl {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
+  }
+
+  #overlayCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    transform: scaleX(-1);
+    pointer-events: none;
+  }
+
+  .camera-ui {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+  }
+
+  .cam-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 1.5px;
+  }
+
+  .cam-corner {
+    width: 20px; height: 20px;
+    border-top: 1.5px solid var(--green);
+    border-left: 1.5px solid var(--green);
+    opacity: 0.6;
+  }
+
+  .cam-corner.tr {
+    border-top: 1.5px solid var(--green);
+    border-left: none;
+    border-right: 1.5px solid var(--green);
+  }
+
+  .corners {
+    position: absolute;
+    inset: 16px;
+    pointer-events: none;
+  }
+
+  .corner { position: absolute; width: 20px; height: 20px; }
+  .corner.tl { top:0; left:0; border-top: 1.5px solid var(--green); border-left: 1.5px solid var(--green); }
+  .corner.tr { top:0; right:0; border-top: 1.5px solid var(--green); border-right: 1.5px solid var(--green); }
+  .corner.bl { bottom:0; left:0; border-bottom: 1.5px solid var(--green); border-left: 1.5px solid var(--green); }
+  .corner.br { bottom:0; right:0; border-bottom: 1.5px solid var(--green); border-right: 1.5px solid var(--green); }
+
+  /* Confidence meter */
+  .confidence-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--surface3);
+  }
+
+  .confidence-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--green);
+    transition: width 0.3s ease, background 0.3s;
+  }
+
+  /* Camera off placeholder */
+  .cam-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: var(--surface);
+  }
+
+  .cam-placeholder-icon {
+    font-size: 48px;
+    opacity: 0.3;
+  }
+
+  .cam-placeholder p {
+    font-size: 14px;
+    color: var(--text2);
+    text-align: center;
+  }
+
+  /* Start button */
+  .start-btn {
+    padding: 14px 32px;
+    background: var(--green);
+    border: none;
+    border-radius: 8px;
+    color: #050508;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+
+  .start-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* Camera bottom bar */
+  .camera-bottom {
+    padding: 12px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .gesture-detected {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gesture-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+    min-width: 120px;
+  }
+
+  .gesture-conf {
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  .hold-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .hold-ring {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--surface3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hold-fill {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 0%;
+    background: var(--green);
+    transition: height 0.1s linear;
+  }
+
+  /* ── RIGHT PANEL ── */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  /* Output display */
+  .output-section {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  .output-en {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    min-height: 40px;
+    letter-spacing: -0.5px;
+  }
+
+  .output-ta {
+    margin-top: 8px;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--green);
+    min-height: 28px;
+    letter-spacing: 0.3px;
+  }
+
+  .output-empty {
+    font-size: 15px;
+    color: var(--text3);
+    font-style: italic;
+  }
+
+  /* Action buttons */
+  .action-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .action-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .action-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+  .action-btn.speak-now {
+    background: var(--green);
+    color: #050508;
+    border-color: var(--green);
+    font-weight: 600;
+  }
+
+  .action-btn.speak-now:hover { opacity: 0.85; }
+  .action-btn.speak-now.speaking { background: var(--amber); border-color: var(--amber); }
+
+  /* Gesture library */
+  .gesture-library {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .gesture-library::-webkit-scrollbar { width: 4px; }
+  .gesture-library::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+  .gesture-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .gesture-card {
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gesture-card:hover { border-color: rgba(0,229,160,0.3); background: var(--green-dim); }
+  .gesture-card.active { border-color: var(--green); background: var(--green-dim); }
+
+  .gesture-card-icon { font-size: 22px; flex-shrink: 0; }
+
+  .gesture-card-text { flex: 1; min-width: 0; }
+  .gesture-card-en { font-size: 12px; font-weight: 500; color: var(--text); line-height: 1.2; }
+  .gesture-card-ta { font-size: 11px; color: var(--text2); margin-top: 2px; line-height: 1.2; }
+  .gesture-card-key { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+
+  /* Category tabs */
+  .cat-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .cat-tabs::-webkit-scrollbar { display: none; }
+
+  .cat-tab {
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 11px;
+    font-family: var(--sans);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .cat-tab.active { background: var(--green); border-color: var(--green); color: #050508; font-weight: 600; }
+
+  /* History */
+  .history-section {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .history-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 130px;
+    overflow-y: auto;
+    margin-top: 8px;
+  }
+
+  .history-scroll::-webkit-scrollbar { width: 3px; }
+  .history-scroll::-webkit-scrollbar-thumb { background: var(--surface3); }
+
+  .history-item {
+    padding: 7px 10px;
+    background: var(--surface2);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s;
+  }
+
+  .history-item:hover { color: var(--text); background: var(--surface3); }
+  .history-item-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .history-replay { font-size: 10px; color: var(--text3); flex-shrink: 0; }
+
+  /* Interview mode */
+  .interview-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 200;
+    flex-direction: column;
+  }
+
+  .interview-overlay.active { display: flex; }
+
+  .interview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .interview-logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 16px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .interview-logo span { color: var(--green); }
+
+  .exit-interview {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    color: rgba(255,255,255,0.4);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .exit-interview:hover { color: white; border-color: rgba(255,255,255,0.3); }
+
+  .interview-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    gap: 24px;
+  }
+
+  .interview-en {
+    font-family: var(--sans);
+    font-size: clamp(32px, 6vw, 64px);
+    font-weight: 600;
+    color: white;
+    text-align: center;
+    line-height: 1.2;
+    min-height: 80px;
+    letter-spacing: -1px;
+  }
+
+  .interview-ta {
+    font-size: clamp(22px, 4vw, 40px);
+    font-weight: 400;
+    color: var(--green);
+    text-align: center;
+    min-height: 52px;
+    letter-spacing: 0.5px;
+  }
+
+  .interview-divider {
+    width: 60px;
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+  }
+
+  .interview-status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 1.5px;
+  }
+
+  .interview-cam-mini {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    width: 200px;
+    height: 150px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(0,229,160,0.2);
+    background: #000;
+  }
+
+  #interviewVideo {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+  }
+
+  #interviewCanvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    transform: scaleX(-1);
+  }
+
+  /* Notification toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 10px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 999;
+    transform: translateY(60px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    font-family: var(--mono);
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Loading overlay */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    transition: opacity 0.5s;
+  }
+
+  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+  .loading-logo {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .loading-logo span { color: var(--green); }
+
+  .loading-bar-wrap {
+    width: 240px;
+    height: 2px;
+    background: var(--surface3);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .loading-bar {
+    height: 100%;
+    background: var(--green);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  .loading-msg {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-logo">Sign<span>Bridge</span></div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
+  <div class="loading-msg" id="loadingMsg">LOADING AI MODELS...</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">✋</div>
+    Sign<span>Bridge</span>
+  </div>
+  <div class="header-status">
+    <div class="status-pill" id="statusPill">
+      <span class="dot"></span>
+      <span id="statusText">INITIALIZING</span>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setInterviewerLang('en')" id="ilBtn-en">EN</button>
+      <button class="lang-btn" onclick="setInterviewerLang('ta')" id="ilBtn-ta">தமிழ்</button>
+    </div>
+    <button class="action-btn" style="flex:none;padding:6px 14px;font-size:12px;" onclick="enterInterview()">
+      🎯 Interview Mode
+    </button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+  <!-- LEFT: CAMERA -->
+  <div class="camera-panel">
+    <div class="camera-wrap">
+      <video id="videoEl" autoplay playsinline muted></video>
+      <canvas id="overlayCanvas"></canvas>
+
+      <!-- Placeholder -->
+      <div class="cam-placeholder" id="camPlaceholder">
+        <div class="cam-placeholder-icon">📷</div>
+        <p>Camera is off<br>Click below to start</p>
+        <button class="start-btn" onclick="startCamera()">START CAMERA</button>
+      </div>
+
+      <!-- Corner brackets -->
+      <div class="corners">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+      </div>
+
+      <!-- Top HUD -->
+      <div class="camera-ui">
+        <span class="cam-label" id="camLabel">CAMERA OFF</span>
+        <span class="cam-label" id="fpsLabel"></span>
+      </div>
+    </div>
+
+    <!-- Confidence bar -->
+    <div class="confidence-bar">
+      <div class="confidence-fill" id="confidenceFill"></div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="camera-bottom">
+      <div class="gesture-detected">
+        <div class="gesture-name" id="gestureName">— no gesture —</div>
+        <div class="gesture-conf" id="gestureConf"></div>
+      </div>
+      <div class="hold-indicator">
+        <span style="font-size:11px;">HOLD</span>
+        <div class="hold-ring">
+          <div class="hold-fill" id="holdFill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+
+    <!-- Output -->
+    <div class="output-section">
+      <div class="section-label">RECOGNIZED OUTPUT</div>
+      <div class="output-en" id="outputEn">
+        <span class="output-empty">Waiting for sign language...</span>
+      </div>
+      <div class="output-ta" id="outputTa"></div>
+      <div class="action-row">
+        <button class="action-btn speak-now" id="speakBtn" onclick="speakOutput()">
+          🔊 Speak
+        </button>
+        <button class="action-btn" onclick="clearOutput()">🗑 Clear</button>
+        <button class="action-btn" onclick="copyOutput()">📋 Copy</button>
+      </div>
+    </div>
+
+    <!-- Gesture library -->
+    <div class="gesture-library">
+      <div class="section-label">GESTURE LIBRARY</div>
+      <div class="cat-tabs" id="catTabs"></div>
+      <div class="gesture-grid" id="gestureGrid"></div>
+    </div>
+
+    <!-- History -->
+    <div class="history-section">
+      <div class="section-label">HISTORY</div>
+      <div class="history-scroll" id="historyList">
+        <div style="font-size:12px;color:var(--text3);padding:8px 0;">Nothing spoken yet.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- INTERVIEW MODE -->
+<div class="interview-overlay" id="interviewOverlay">
+  <div class="interview-header">
+    <div class="interview-logo">Sign<span>Bridge</span> — Interview Mode</div>
+    <button class="exit-interview" onclick="exitInterview()">✕ Exit</button>
+  </div>
+  <div class="interview-body">
+    <div class="interview-status-row">
+      <span class="dot pulse" style="color:var(--green)"></span>
+      READING SIGNS IN REAL TIME
+    </div>
+    <div class="interview-en" id="interviewEn">Waiting...</div>
+    <div class="interview-divider"></div>
+    <div class="interview-ta" id="interviewTa"></div>
+  </div>
+  <!-- Mini cam in corner -->
+  <div class="interview-cam-mini">
+    <video id="interviewVideo" autoplay playsinline muted></video>
+    <canvas id="interviewCanvas"></canvas>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MediaPipe + TF -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
+<script>
+// ── GESTURE DATABASE ──
+const GESTURES = {
+  Greetings: [
+    { id:'hello',     icon:'👋', en:'Hello, thank you for having me.',        ta:'வணக்கம், என்னை அழைத்தமைக்கு நன்றி.',    fingers:[1,1,1,1,1], desc:'Open palm wave' },
+    { id:'thanks',    icon:'🙏', en:'Thank you very much.',                   ta:'மிகவும் நன்றி.',                          fingers:[1,1,1,1,1], desc:'Both palms together' },
+    { id:'pleased',   icon:'😊', en:'I am pleased to meet you.',              ta:'உங்களை சந்திப்பதில் மகிழ்ச்சி.',        fingers:[1,1,0,0,0], desc:'Two fingers up' },
+  ],
+  Responses: [
+    { id:'yes',       icon:'✅', en:'Yes, I understand completely.',           ta:'ஆம், நான் முழுமையாக புரிந்துகொண்டேன்.',fingers:[1,0,0,0,1], desc:'Thumbs up' },
+    { id:'no',        icon:'❌', en:'No, I respectfully disagree.',            ta:'இல்லை, நான் மரியாதையாக மறுக்கிறேன்.',  fingers:[0,0,0,0,0], desc:'Closed fist' },
+    { id:'repeat',    icon:'🔄', en:'Could you please repeat the question?',  ta:'தயவுசெய்து கேள்வியை மீண்டும் கேட்க முடியுமா?', fingers:[1,1,0,0,0], desc:'Point forward' },
+    { id:'wait',      icon:'✋', en:'Please give me a moment to think.',      ta:'சிறிது நேரம் சிந்திக்க அனுமதியுங்கள்.',fingers:[1,1,1,1,1], desc:'Stop hand' },
+    { id:'agree',     icon:'👍', en:'I completely agree with that.',          ta:'நான் அதனோடு முழுமையாக ஒப்புக்கொள்கிறேன்.',fingers:[1,0,0,0,0], desc:'Thumbs up' },
+  ],
+  Interview: [
+    { id:'exp',       icon:'💼', en:'I have strong experience in this field.',ta:'இந்த துறையில் எனக்கு வலுவான அனுபவம் உள்ளது.',fingers:[1,1,1,0,0], desc:'Three fingers' },
+    { id:'skill',     icon:'🏆', en:'My key strength is problem solving.',    ta:'என் முக்கிய பலம் சிக்கல் தீர்வு திறன்.',fingers:[0,1,0,0,0], desc:'Index finger point' },
+    { id:'learn',     icon:'📚', en:'I am a fast learner and a team player.', ta:'நான் வேகமாக கற்கிறேன், குழு வீரன்.',    fingers:[1,1,1,1,0], desc:'Four fingers' },
+    { id:'goal',      icon:'🎯', en:'My goal is to contribute meaningfully.', ta:'என் குறிக்கோள் அர்த்தமுள்ள பங்களிப்பு செய்வது.',fingers:[0,1,1,0,0], desc:'Two forward' },
+    { id:'join',      icon:'🤝', en:'I look forward to joining your team.',   ta:'உங்கள் குழுவில் சேர ஆவலாக உள்ளேன்.',   fingers:[1,0,0,0,1], desc:'Pinky thumb out' },
+    { id:'salary',    icon:'💰', en:'My expected salary is negotiable.',      ta:'என் எதிர்பார்க்கும் சம்பளம் பேச்சுவார்த்தைக்கு உட்பட்டது.',fingers:[0,0,1,0,0], desc:'Middle finger' },
+  ],
+  Closing: [
+    { id:'close1',    icon:'🙏', en:'Thank you for your valuable time.',      ta:'உங்கள் மதிப்புமிக்க நேரத்திற்கு நன்றி.',fingers:[1,1,1,1,1], desc:'Open palm' },
+    { id:'close2',    icon:'📞', en:'Please feel free to contact me anytime.',ta:'எந்த நேரத்திலும் தொடர்பு கொள்ளலாம்.',  fingers:[1,0,0,0,1], desc:'Phone sign' },
+    { id:'close3',    icon:'👏', en:'This was a wonderful opportunity.',      ta:'இது ஒரு அற்புதமான வாய்ப்பு.',           fingers:[0,0,0,0,1], desc:'Pinky up' },
+  ]
+};
+
+// All gestures flat
+const ALL_GESTURES = Object.values(GESTURES).flat();
+
+// ── STATE ──
+let currentOutput = { en: '', ta: '' };
+let interviewerLang = 'en';
+let history = [];
+let cameraRunning = false;
+let hands = null;
+let lastGestureId = null;
+let holdStart = null;
+let holdMs = 1800;
+let confirmedGestureId = null;
+let frameCount = 0, lastFps = 0, fpsTimer = 0;
+let currentCategory = 'Greetings';
+let synth = window.speechSynthesis;
+let voices = [];
+let interviewMode = false;
+
+// ── LOADING ──
+function updateLoading(pct, msg) {
+  document.getElementById('loadingBar').style.width = pct + '%';
+  document.getElementById('loadingMsg').textContent = msg;
+}
+
+// ── INIT UI ──
+function initUI() {
+  buildCatTabs();
+  renderGestureGrid('Greetings');
+  loadVoices();
+  if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+}
+
+function loadVoices() {
+  voices = synth.getVoices();
+}
+
+function buildCatTabs() {
+  const tabs = document.getElementById('catTabs');
+  tabs.innerHTML = '';
+  Object.keys(GESTURES).forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab' + (cat === currentCategory ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = () => {
+      currentCategory = cat;
+      document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderGestureGrid(cat);
+    };
+    tabs.appendChild(btn);
+  });
+}
+
+function renderGestureGrid(cat) {
+  const grid = document.getElementById('gestureGrid');
+  grid.innerHTML = '';
+  GESTURES[cat].forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'gesture-card';
+    card.id = 'gcard-' + g.id;
+    card.innerHTML = `
+      <span class="gesture-card-icon">${g.icon}</span>
+      <div class="gesture-card-text">
+        <div class="gesture-card-en">${g.en.length > 32 ? g.en.slice(0,30)+'…' : g.en}</div>
+        <div class="gesture-card-ta">${g.ta.length > 28 ? g.ta.slice(0,26)+'…' : g.ta}</div>
+        <div class="gesture-card-key">${g.desc}</div>
+      </div>`;
+    card.onclick = () => triggerGesture(g);
+    grid.appendChild(card);
+  });
+}
+
+// ── CAMERA ── 
+async function startCamera() {
+  document.getElementById('camPlaceholder').style.display = 'none';
+  document.getElementById('camLabel').textContent = 'STARTING...';
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width:1280, height:720, facingMode:'user' } });
+    const video = document.getElementById('videoEl');
+    video.srcObject = stream;
+    await video.play();
+
+    // Also pipe to interview mini-cam
+    const iv = document.getElementById('interviewVideo');
+    iv.srcObject = stream;
+
+    cameraRunning = true;
+    document.getElementById('camLabel').textContent = 'LIVE — SHOW YOUR HAND';
+    setStatus('ready', 'CAMERA READY');
+
+    initMediaPipe(video);
+  } catch(e) {
+    document.getElementById('camPlaceholder').style.display = 'flex';
+    showToast('Camera access denied. Please allow camera permission.');
+    setStatus('', 'NO CAMERA');
+  }
+}
+
+// ── MEDIAPIPE HANDS ──
+async function initMediaPipe(videoEl) {
+  updateLoading(60, 'LOADING HAND TRACKING...');
+
+  hands = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  });
+
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.6
+  });
+
+  hands.onResults(onHandResults);
+
+  const camera = new Camera(videoEl, {
+    onFrame: async () => {
+      await hands.send({ image: videoEl });
+      frameCount++;
+      const now = Date.now();
+      if (now - fpsTimer > 1000) {
+        lastFps = frameCount;
+        frameCount = 0;
+        fpsTimer = now;
+        document.getElementById('fpsLabel').textContent = lastFps + ' FPS';
+      }
+    },
+    width: 1280,
+    height: 720
+  });
+
+  await camera.start();
+  updateLoading(100, 'READY');
+  setTimeout(() => document.getElementById('loadingOverlay').classList.add('hidden'), 600);
+}
+
+// ── HAND RESULTS ──
+function onHandResults(results) {
+  const canvas = document.getElementById('overlayCanvas');
+  const video = document.getElementById('videoEl');
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Also draw on interview canvas
+  const ic = document.getElementById('interviewCanvas');
+  const iv = document.getElementById('interviewVideo');
+  ic.width = iv.videoWidth || 200;
+  ic.height = iv.videoHeight || 150;
+  const ictx = ic.getContext('2d');
+  ictx.clearRect(0, 0, ic.width, ic.height);
+
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    noHandDetected();
+    return;
+  }
+
+  const landmarks = results.multiHandLandmarks[0];
+
+  // Draw landmarks
+  drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#00e5a020', lineWidth: 2 });
+  drawLandmarks(ctx, landmarks, { color: '#00e5a0', fillColor: '#00e5a060', lineWidth: 1, radius: 4 });
+  drawConnectors(ictx, landmarks, HAND_CONNECTIONS, { color: '#00e5a030', lineWidth: 1 });
+  drawLandmarks(ictx, landmarks, { color: '#00e5a0', fillColor: '#00e5a060', lineWidth: 1, radius: 3 });
+
+  // Classify gesture
+  const fingers = getFingerState(landmarks);
+  const confidence = results.multiHandedness?.[0]?.score || 0.8;
+  const matched = classifyGesture(fingers, landmarks, confidence);
+
+  if (matched) {
+    updateGestureUI(matched, confidence);
+    handleHoldTimer(matched);
+  } else {
+    noHandDetected();
+  }
+}
+
+// ── FINGER STATE ──
+function getFingerState(lm) {
+  // Returns array of 5: [thumb, index, middle, ring, pinky] = 1 (up) or 0 (down)
+  const tips  = [4, 8, 12, 16, 20];
+  const pips  = [3, 6, 10, 14, 18];
+  const mcps  = [2, 5, 9, 13, 17];
+  const wrist = lm[0];
+
+  const state = [];
+
+  // Thumb: compare x (mirrored cam)
+  state.push(lm[tips[0]].x < lm[pips[0]].x ? 1 : 0);
+
+  // Other 4 fingers: tip y < pip y means extended
+  for (let i = 1; i < 5; i++) {
+    state.push(lm[tips[i]].y < lm[pips[i]].y ? 1 : 0);
+  }
+
+  return state;
+}
+
+// ── GESTURE CLASSIFIER ──
+function classifyGesture(fingers, lm, confidence) {
+  const sum = fingers.reduce((a,b) => a+b, 0);
+
+  // Priority order based on finger patterns
+  // Open palm (5 fingers) - hello/thanks/wait
+  if (fingers[0]===1 && fingers[1]===1 && fingers[2]===1 && fingers[3]===1 && fingers[4]===1) {
+    if (confidence > 0.85) return getGestureById('wait');
+    return getGestureById('hello');
+  }
+  // Fist (0 fingers) - no
+  if (sum === 0) return getGestureById('no');
+  // Thumbs up only
+  if (fingers[0]===1 && fingers[1]===0 && fingers[2]===0 && fingers[3]===0 && fingers[4]===0) return getGestureById('agree');
+  // Index only
+  if (fingers[0]===0 && fingers[1]===1 && fingers[2]===0 && fingers[3]===0 && fingers[4]===0) return getGestureById('skill');
+  // Index + middle (peace/two)
+  if (fingers[0]===0 && fingers[1]===1 && fingers[2]===1 && fingers[3]===0 && fingers[4]===0) return getGestureById('pleased');
+  // Middle only
+  if (fingers[0]===0 && fingers[1]===0 && fingers[2]===1 && fingers[3]===0 && fingers[4]===0) return getGestureById('salary');
+  // Index + middle + ring (three)
+  if (fingers[0]===1 && fingers[1]===1 && fingers[2]===1 && fingers[3]===0 && fingers[4]===0) return getGestureById('exp');
+  // Four fingers (no thumb)
+  if (fingers[0]===1 && fingers[1]===1 && fingers[2]===1 && fingers[3]===1 && fingers[4]===0) return getGestureById('learn');
+  // Pinky only
+  if (fingers[0]===0 && fingers[1]===0 && fingers[2]===0 && fingers[3]===0 && fingers[4]===1) return getGestureById('close3');
+  // Thumb + pinky (phone/shaka)
+  if (fingers[0]===1 && fingers[1]===0 && fingers[2]===0 && fingers[3]===0 && fingers[4]===1) return getGestureById('close2');
+  // Index + middle forward
+  if (fingers[0]===0 && fingers[1]===1 && fingers[2]===1 && fingers[3]===1 && fingers[4]===0) return getGestureById('goal');
+
+  return null;
+}
+
+function getGestureById(id) {
+  return ALL_GESTURES.find(g => g.id === id);
+}
+
+// ── HOLD TIMER ──
+function handleHoldTimer(gesture) {
+  if (lastGestureId !== gesture.id) {
+    lastGestureId = gesture.id;
+    holdStart = Date.now();
+  }
+  const elapsed = Date.now() - holdStart;
+  const pct = Math.min(elapsed / holdMs * 100, 100);
+  document.getElementById('holdFill').style.height = pct + '%';
+
+  if (elapsed >= holdMs && confirmedGestureId !== gesture.id) {
+    confirmedGestureId = gesture.id;
+    triggerGesture(gesture);
+  }
+}
+
+function noHandDetected() {
+  document.getElementById('gestureName').textContent = '— no hand —';
+  document.getElementById('gestureConf').textContent = '';
+  document.getElementById('confidenceFill').style.width = '0%';
+  document.getElementById('holdFill').style.height = '0%';
+  lastGestureId = null;
+  holdStart = null;
+  confirmedGestureId = null;
+}
+
+// ── TRIGGER GESTURE ──
+function triggerGesture(gesture) {
+  currentOutput = { en: gesture.en, ta: gesture.ta };
+
+  document.getElementById('outputEn').textContent = gesture.en;
+  document.getElementById('outputTa').textContent = gesture.ta;
+  document.getElementById('interviewEn').textContent = gesture.en;
+  document.getElementById('interviewTa').textContent = gesture.ta;
+
+  // Highlight card
+  document.querySelectorAll('.gesture-card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('gcard-' + gesture.id);
+  if (card) card.classList.add('active');
+
+  addHistory(gesture);
+  autoSpeak(gesture);
+}
+
+function updateGestureUI(gesture, confidence) {
+  document.getElementById('gestureName').textContent = gesture.icon + ' ' + gesture.id.toUpperCase();
+  document.getElementById('gestureConf').textContent = Math.round(confidence * 100) + '%';
+  document.getElementById('confidenceFill').style.width = (confidence * 100) + '%';
+  document.getElementById('confidenceFill').style.background =
+    confidence > 0.85 ? 'var(--green)' : confidence > 0.7 ? 'var(--amber)' : 'var(--red)';
+}
+
+// ── SPEECH ──
+function autoSpeak(gesture) {
+  const text = interviewerLang === 'ta' ? gesture.ta : gesture.en;
+  speak(text);
+}
+
+function speakOutput() {
+  if (!currentOutput.en) { showToast('No output to speak yet.'); return; }
+  const text = interviewerLang === 'ta' ? currentOutput.ta : currentOutput.en;
+  speak(text);
+}
+
+function speak(text) {
+  if (synth.speaking) synth.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang = interviewerLang === 'ta' ? 'ta-IN' : 'en-IN';
+  utt.rate = 0.95;
+  utt.pitch = 1;
+  const btn = document.getElementById('speakBtn');
+  utt.onstart = () => { btn.classList.add('speaking'); btn.textContent = '🔊 Speaking...'; };
+  utt.onend = () => { btn.classList.remove('speaking'); btn.innerHTML = '🔊 Speak'; };
+  synth.speak(utt);
+}
+
+// ── HISTORY ──
+function addHistory(gesture) {
+  history.unshift({ en: gesture.en, ta: gesture.ta, icon: gesture.icon });
+  if (history.length > 8) history.pop();
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (!history.length) { list.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0;">Nothing spoken yet.</div>'; return; }
+  list.innerHTML = '';
+  history.forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `<span>${h.icon}</span><span class="history-item-text">${h.en}</span><span class="history-replay">▶</span>`;
+    item.onclick = () => { currentOutput = { en:h.en, ta:h.ta }; document.getElementById('outputEn').textContent = h.en; document.getElementById('outputTa').textContent = h.ta; speak(interviewerLang==='ta'?h.ta:h.en); };
+    list.appendChild(item);
+  });
+}
+
+// ── INTERVIEW MODE ──
+function enterInterview() {
+  document.getElementById('interviewOverlay').classList.add('active');
+  interviewMode = true;
+}
+
+function exitInterview() {
+  document.getElementById('interviewOverlay').classList.remove('active');
+  interviewMode = false;
+}
+
+// ── LANGUAGE ──
+function setInterviewerLang(lang) {
+  interviewerLang = lang;
+  document.getElementById('ilBtn-en').classList.toggle('active', lang==='en');
+  document.getElementById('ilBtn-ta').classList.toggle('active', lang==='ta');
+  showToast(lang==='ta' ? 'Interviewer language: Tamil' : 'Interviewer language: English');
+}
+
+// ── STATUS ──
+function setStatus(type, text) {
+  const pill = document.getElementById('statusPill');
+  const dot = pill.querySelector('.dot');
+  pill.className = 'status-pill ' + type;
+  dot.className = 'dot' + (type === 'detecting' ? ' pulse' : '');
+  document.getElementById('statusText').textContent = text;
+}
+
+// ── UTILS ──
+function clearOutput() {
+  currentOutput = { en:'', ta:'' };
+  document.getElementById('outputEn').innerHTML = '<span class="output-empty">Waiting for sign language...</span>';
+  document.getElementById('outputTa').textContent = '';
+  document.getElementById('interviewEn').textContent = 'Waiting...';
+  document.getElementById('interviewTa').textContent = '';
+  if (synth.speaking) synth.cancel();
+}
+
+function copyOutput() {
+  if (!currentOutput.en) return;
+  navigator.clipboard.writeText(currentOutput.en + (currentOutput.ta ? '\n' + currentOutput.ta : ''));
+  showToast('Copied!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── BOOT ──
+window.addEventListener('load', async () => {
+  updateLoading(20, 'INITIALIZING...');
+  initUI();
+  updateLoading(40, 'READY TO START');
+  setTimeout(() => {
+    document.getElementById('loadingOverlay').classList.add('hidden');
+  }, 1200);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') exitInterview();
+  if (e.key === ' ' && e.target.tagName !== 'INPUT') { e.preventDefault(); speakOutput(); }
+});
+</script>
+</body>
+</html>
