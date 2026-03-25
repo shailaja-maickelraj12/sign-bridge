@@ -329,6 +329,97 @@ select:focus { border-color:var(--blue); }
   transition:transform 0.32s cubic-bezier(0.34,1.56,0.64,1);
 }
 .toast.show { transform:translateX(-50%) translateY(0); }
+
+/* ── ONLINE INTERVIEW OVERLAY ── */
+.oi-wrap { display:none; position:fixed; inset:0; background:var(--bg); z-index:300; flex-direction:column; }
+.oi-wrap.open { display:flex; }
+
+/* Setup screen */
+.oi-setup { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; padding:40px; }
+.oi-logo { font-family:'Outfit',sans-serif; font-size:22px; font-weight:800; margin-bottom:32px; }
+.oi-logo span { color:var(--cyan); }
+.oi-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px 32px; width:min(520px,100%); }
+.oi-card h2 { font-size:17px; font-weight:700; margin-bottom:18px; color:var(--text); }
+.oi-step { display:flex; align-items:flex-start; gap:12px; margin-bottom:14px; }
+.oi-step-num { width:26px; height:26px; border-radius:50%; background:var(--cyan-dim); border:1px solid rgba(0,229,255,0.25); color:var(--cyan); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.oi-step-txt { font-size:13px; color:var(--text2); line-height:1.5; padding-top:3px; }
+.oi-step-txt strong { color:var(--text); font-weight:500; }
+.oi-platforms { display:flex; gap:8px; margin:16px 0; }
+.oi-plat { flex:1; padding:10px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text2); font-family:'Outfit',sans-serif; font-size:13px; cursor:pointer; text-align:center; transition:all 0.2s; }
+.oi-plat.on { background:var(--cyan-dim); border-color:rgba(0,229,255,0.35); color:var(--cyan); }
+.oi-input { width:100%; padding:11px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:'Outfit',sans-serif; font-size:14px; outline:none; margin:8px 0 16px; transition:border-color 0.2s; }
+.oi-input:focus { border-color:var(--cyan); }
+.oi-input::placeholder { color:var(--text3); }
+.oi-start { width:100%; padding:14px; background:var(--cyan); border:none; border-radius:10px; color:#060810; font-family:'Outfit',sans-serif; font-size:15px; font-weight:800; cursor:pointer; transition:all 0.2s; }
+.oi-start:hover { filter:brightness(1.1); transform:translateY(-1px); }
+
+/* Main interview screen */
+.oi-main { display:none; flex-direction:column; flex:1; overflow:hidden; }
+.oi-topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
+.oi-brand { font-size:14px; font-weight:800; color:var(--text2); }
+.oi-brand span { color:var(--cyan); }
+.oi-live { display:flex; align-items:center; gap:6px; padding:3px 10px; border-radius:20px; background:rgba(0,230,118,0.1); border:1px solid rgba(0,230,118,0.2); font-size:11px; font-weight:600; letter-spacing:1px; color:#00e676; }
+.oi-live-dot { width:6px; height:6px; border-radius:50%; background:#00e676; animation:blink 1.5s infinite; }
+.oi-ptag { padding:3px 10px; border-radius:20px; background:var(--cyan-dim); border:1px solid var(--border2); font-size:11px; color:var(--cyan); }
+.oi-timer { font-size:12px; color:var(--text3); font-family:var(--mono); }
+.oi-exit { padding:5px 13px; background:transparent; border:1px solid var(--border); border-radius:7px; color:var(--text2); font-family:'Outfit',sans-serif; font-size:12px; cursor:pointer; transition:all 0.2s; }
+.oi-exit:hover { border-color:var(--red); color:var(--red); }
+
+/* Camera strip */
+.oi-camstrip { display:flex; align-items:center; gap:14px; padding:10px 20px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
+.oi-cambox { position:relative; width:160px; height:107px; border-radius:8px; overflow:hidden; border:1px solid var(--border); background:#000; flex-shrink:0; }
+#oiVid { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+#oiCvs { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); }
+.oi-camld { position:absolute; inset:0; background:rgba(6,8,16,0.92); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; border-radius:8px; }
+.oi-share-hint { padding:7px 13px; background:rgba(255,171,0,0.08); border:1px solid rgba(255,171,0,0.2); border-radius:7px; font-size:12px; color:var(--amber); }
+
+/* Display area — interviewer sees this */
+.oi-display { flex:1; display:flex; flex-direction:column; padding:20px 28px; overflow:hidden; }
+.oi-interviewer-lbl { font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:12px; }
+.oi-current { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px 28px; margin-bottom:14px; min-height:120px; display:flex; flex-direction:column; justify-content:center; position:relative; overflow:hidden; flex-shrink:0; }
+.oi-current::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background:var(--cyan); border-radius:4px 0 0 4px; }
+.oi-current.speaking::before { animation:bar-pulse 0.8s infinite; }
+@keyframes bar-pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+.oi-cur-en { font-size:clamp(20px,3vw,38px); font-weight:700; color:var(--text); line-height:1.3; letter-spacing:-0.3px; min-height:44px; }
+.oi-cur-ta { font-size:clamp(15px,2.2vw,26px); font-weight:300; color:var(--cyan); margin-top:8px; line-height:1.4; min-height:32px; }
+.oi-speak-ind { position:absolute; top:14px; right:18px; display:flex; align-items:center; gap:5px; font-size:11px; color:var(--green); opacity:0; transition:opacity 0.3s; }
+.oi-speak-ind.show { opacity:1; }
+.oi-bars { display:flex; gap:2px; align-items:flex-end; height:14px; }
+.oi-bar { width:3px; background:var(--green); border-radius:2px; animation:bar-anim 0.8s infinite; }
+.oi-bar:nth-child(2){animation-delay:0.15s}.oi-bar:nth-child(3){animation-delay:0.3s}
+@keyframes bar-anim{0%,100%{height:3px}50%{height:13px}}
+
+/* History */
+.oi-hist-area { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+.oi-hist-area::-webkit-scrollbar{width:3px}
+.oi-hist-area::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+.oi-hi { padding:10px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; display:flex; align-items:center; gap:10px; cursor:pointer; transition:all 0.15s; }
+.oi-hi:hover { border-color:var(--blue); }
+.oi-hi-icon { font-size:18px; flex-shrink:0; }
+.oi-hi-texts { flex:1; overflow:hidden; }
+.oi-hi-en { font-size:13px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.oi-hi-ta { font-size:11px; color:var(--text2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.oi-hi-empty { font-size:13px; color:var(--text3); text-align:center; padding:24px; }
+
+/* Bottom controls — INTERVIEWER controls */
+.oi-controls { display:flex; align-items:center; gap:14px; padding:10px 20px; background:var(--surface); border-top:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+.oi-ctrl-lbl { font-size:10px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; color:var(--text3); }
+.oi-lang-btns { display:flex; gap:5px; }
+.oi-lang-btn { padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:var(--surface2); color:var(--text2); font-family:'Outfit',sans-serif; font-size:12px; cursor:pointer; transition:all 0.2s; }
+.oi-lang-btn.on { background:var(--cyan-dim); border-color:rgba(0,229,255,0.35); color:var(--cyan); }
+.oi-toggle { display:flex; align-items:center; gap:7px; cursor:pointer; }
+.oi-tgl { width:34px; height:18px; background:var(--surface3); border-radius:9px; position:relative; transition:background 0.2s; border:1px solid var(--border); }
+.oi-tgl.on { background:var(--cyan); }
+.oi-tgl-knob { position:absolute; top:2px; left:2px; width:12px; height:12px; background:white; border-radius:50%; transition:transform 0.2s; }
+.oi-tgl.on .oi-tgl-knob { transform:translateX(16px); }
+.oi-tgl-lbl { font-size:12px; color:var(--text2); }
+.oi-speed { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text2); }
+.oi-speed input { width:70px; }
+.oi-ctrl-right { margin-left:auto; display:flex; gap:7px; }
+.oi-speak-btn { padding:7px 18px; background:var(--blue); border:none; border-radius:7px; color:#fff; font-family:'Outfit',sans-serif; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.oi-speak-btn:hover { filter:brightness(1.15); }
+.oi-clear-btn { padding:7px 13px; background:transparent; border:1px solid var(--border); border-radius:7px; color:var(--text2); font-family:'Outfit',sans-serif; font-size:12px; cursor:pointer; transition:all 0.2s; }
+.oi-clear-btn:hover { border-color:var(--red); color:var(--red); }
 </style>
 </head>
 <body>
@@ -343,6 +434,7 @@ select:focus { border-color:var(--blue); }
     <button class="pill"        id="pill-ASL"   onclick="setLang('ASL')">ASL</button>
     <button class="pill"        id="pill-Tamil" onclick="setLang('Tamil')">Tamil</button>
     <button class="pill iv"     onclick="openIV()">Interview Mode</button>
+    <button class="pill iv" onclick="openOnlineIV()" style="border-color:rgba(74,222,128,0.3);color:#4ade80;">🌐 Online Interview</button>
   </div>
   <div class="status-chip">
     <span class="dot" id="sDot"></span>
@@ -443,6 +535,137 @@ select:focus { border-color:var(--blue); }
     <div class="iv-en" id="ivEn">Waiting for gesture...</div>
     <div class="iv-ta" id="ivTa"></div>
     <div class="iv-hint">The candidate signs → text appears here for the interviewer</div>
+  </div>
+</div>
+
+<!-- ── ONLINE INTERVIEW MODE ── -->
+<div class="oi-wrap" id="oiWrap">
+
+  <!-- SETUP SCREEN -->
+  <div class="oi-setup" id="oiSetup">
+    <div class="oi-logo">Sign<span>Bridge</span> — 🌐 Online Interview</div>
+    <div class="oi-card">
+      <h2>Setup your online interview</h2>
+      <div class="oi-step"><div class="oi-step-num">1</div><div class="oi-step-txt">Join your video call first — <strong>Google Meet, Zoom or MS Teams</strong></div></div>
+      <div class="oi-step"><div class="oi-step-num">2</div><div class="oi-step-txt">Enter your name and select your platform below</div></div>
+      <div class="oi-step"><div class="oi-step-num">3</div><div class="oi-step-txt">Click Start — then <strong>share your screen</strong> on the video call so the interviewer sees your responses</div></div>
+      <div class="oi-step"><div class="oi-step-num">4</div><div class="oi-step-txt">The <strong>interviewer controls</strong> speed, language and speech from the bottom bar</div></div>
+
+      <div style="font-size:11px;color:var(--text3);margin:14px 0 8px;letter-spacing:0.5px;">SELECT PLATFORM</div>
+      <div class="oi-platforms">
+        <button class="oi-plat on" id="oip-meet" onclick="setOIPlatform('Google Meet')">📹 Google Meet</button>
+        <button class="oi-plat"    id="oip-zoom" onclick="setOIPlatform('Zoom')">💻 Zoom</button>
+        <button class="oi-plat"    id="oip-teams" onclick="setOIPlatform('MS Teams')">🟦 MS Teams</button>
+      </div>
+
+      <div style="font-size:11px;color:var(--text3);margin-bottom:7px;letter-spacing:0.5px;">YOUR NAME</div>
+      <input class="oi-input" id="oiName" placeholder="e.g. Arjun Kumar" maxlength="40">
+
+      <button class="oi-start" onclick="startOI()">🚀 &nbsp; Start Online Interview</button>
+      <button onclick="closeOI()" style="width:100%;margin-top:10px;padding:10px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-family:'Outfit',sans-serif;font-size:13px;cursor:pointer;">← Back</button>
+    </div>
+  </div>
+
+  <!-- MAIN SCREEN -->
+  <div class="oi-main" id="oiMain">
+    <!-- Top bar -->
+    <div class="oi-topbar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="oi-brand">Sign<span>Bridge</span></div>
+        <div class="oi-live"><span class="oi-live-dot"></span>LIVE</div>
+        <div class="oi-ptag" id="oiPlatTag">Google Meet</div>
+        <div class="oi-ptag" id="oiNameTag" style="border-color:rgba(255,171,0,0.3);color:var(--amber);background:rgba(255,171,0,0.07);">Candidate</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="oi-timer" id="oiTimer">00:00</div>
+        <button class="oi-exit" onclick="closeOI()">✕ Exit</button>
+      </div>
+    </div>
+
+    <!-- Camera strip -->
+    <div class="oi-camstrip">
+      <div class="oi-cambox">
+        <video id="oiVid" autoplay playsinline muted></video>
+        <canvas id="oiCvs"></canvas>
+        <div class="oi-camld" id="oiCamLd">
+          <div class="spin"></div>
+          <div class="loading-txt" id="oiCamTxt">Starting camera...</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);">
+          <span class="dot" id="oiCamDot"></span>
+          <span id="oiCamStatus">Camera off</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);" id="oiBkStatus">Backend: checking...</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex:1;">
+        <span id="oiMiniIcon" style="font-size:26px;opacity:0;transition:opacity 0.3s;"></span>
+        <div style="flex:1;max-width:180px;">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:3px;" id="oiConfLbl">Ready</div>
+          <div style="height:3px;border-radius:2px;background:var(--surface3);overflow:hidden;">
+            <div style="height:100%;border-radius:2px;background:var(--cyan);width:0%;transition:width 0.2s;" id="oiConfFill"></div>
+          </div>
+        </div>
+      </div>
+      <div class="oi-share-hint">📺 Share <strong>this screen</strong> on your video call</div>
+    </div>
+
+    <!-- Display area — interviewer sees this -->
+    <div class="oi-display">
+      <div class="oi-interviewer-lbl">👀 Interviewer sees this ↓</div>
+      <div class="oi-current" id="oiCurrentBox">
+        <div class="oi-speak-ind" id="oiSpeakInd">
+          <div class="oi-bars"><div class="oi-bar"></div><div class="oi-bar"></div><div class="oi-bar"></div></div>
+          Speaking...
+        </div>
+        <div class="oi-cur-en" id="oiCurEn"><span style="color:var(--text3);font-weight:300;font-size:clamp(14px,1.8vw,20px)">Waiting — sign a gesture to begin...</span></div>
+        <div class="oi-cur-ta" id="oiCurTa"></div>
+      </div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:7px;">Previous responses</div>
+      <div class="oi-hist-area" id="oiHistArea"><div class="oi-hi-empty">Responses appear here as you sign...</div></div>
+    </div>
+
+    <!-- Bottom controls — INTERVIEWER controls these -->
+    <div class="oi-controls">
+      <div>
+        <div class="oi-ctrl-lbl" style="margin-bottom:5px;">Interviewer controls</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <!-- Language -->
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:11px;color:var(--text3);">Language:</span>
+            <div class="oi-lang-btns">
+              <button class="oi-lang-btn on" id="oil-en" onclick="oiTogLang('en')">English</button>
+              <button class="oi-lang-btn on" id="oil-ta" onclick="oiTogLang('ta')">தமிழ்</button>
+              <button class="oi-lang-btn"    id="oil-hi" onclick="oiTogLang('hi')">हिंदी</button>
+            </div>
+          </div>
+          <!-- Speech toggle -->
+          <div class="oi-toggle" onclick="oiTogSpeech()">
+            <div class="oi-tgl on" id="oiSpeechTgl"><div class="oi-tgl-knob"></div></div>
+            <span class="oi-tgl-lbl">Auto-speak</span>
+          </div>
+          <!-- Speed -->
+          <div class="oi-speed">
+            <span>Speed:</span>
+            <input type="range" min="0.6" max="1.8" step="0.1" value="1" id="oiSpeed"
+              oninput="document.getElementById('oiSpeedV').textContent=parseFloat(this.value).toFixed(1)+'x'">
+            <span id="oiSpeedV">1.0x</span>
+          </div>
+          <!-- Volume -->
+          <div class="oi-speed">
+            <span>Volume:</span>
+            <input type="range" min="0" max="1" step="0.05" value="1" id="oiVol"
+              oninput="document.getElementById('oiVolV').textContent=Math.round(this.value*100)+'%'">
+            <span id="oiVolV">100%</span>
+          </div>
+        </div>
+      </div>
+      <div class="oi-ctrl-right">
+        <button class="oi-clear-btn" onclick="oiClear()">Clear</button>
+        <button class="oi-speak-btn" onclick="oiSpeakAgain()">🔊 Speak again</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -731,7 +954,205 @@ function toggleLang(l){
 }
 function openIV(){ ivOpen=true; document.getElementById('ivWrap').classList.add('open'); }
 function closeIV(){ ivOpen=false; document.getElementById('ivWrap').classList.remove('open'); }
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeIV(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeIV(); closeOI(); } });
+
+// ── ONLINE INTERVIEW MODE ──
+let oiPlatform='Google Meet', oiAutoSpeak=true;
+let oiLangs={en:true,ta:true,hi:false};
+let oiHist=[], oiLastEn='', oiLastTa='';
+let oiLastId=null, oiHoldCount=0, oiLastTime=0, oiPending=false;
+let oiTimer=0, oiTimerInt=null, oiCamStarted=false;
+
+function openOnlineIV(){
+  document.getElementById('oiWrap').classList.add('open');
+}
+
+function closeOI(){
+  document.getElementById('oiWrap').classList.remove('open');
+  document.getElementById('oiSetup').style.display='flex';
+  document.getElementById('oiMain').style.display='none';
+  if(oiTimerInt){ clearInterval(oiTimerInt); oiTimerInt=null; oiTimer=0; }
+  speechSynthesis.cancel();
+}
+
+function setOIPlatform(p){
+  oiPlatform=p;
+  ['meet','zoom','teams'].forEach(k=>document.getElementById('oip-'+k).classList.remove('on'));
+  const map={'Google Meet':'meet','Zoom':'zoom','MS Teams':'teams'};
+  document.getElementById('oip-'+map[p])?.classList.add('on');
+}
+
+function startOI(){
+  const name=document.getElementById('oiName').value.trim()||'Candidate';
+  document.getElementById('oiNameTag').textContent=name;
+  document.getElementById('oiPlatTag').textContent=oiPlatform;
+  document.getElementById('oiSetup').style.display='none';
+  document.getElementById('oiMain').style.display='flex';
+
+  // Start timer
+  oiTimerInt=setInterval(()=>{
+    oiTimer++;
+    const m=String(Math.floor(oiTimer/60)).padStart(2,'0');
+    const s=String(oiTimer%60).padStart(2,'0');
+    document.getElementById('oiTimer').textContent=m+':'+s;
+  },1000);
+
+  // Check backend
+  document.getElementById('oiBkStatus').textContent=backendOk?'Backend: Connected ✓':'Backend: Browser mode';
+  document.getElementById('oiBkStatus').style.color=backendOk?'var(--green)':'var(--amber)';
+
+  // Start camera if not already
+  if(!oiCamStarted){ startOICam(); oiCamStarted=true; }
+  toast('Online interview started! Share your screen on '+oiPlatform);
+}
+
+async function startOICam(){
+  document.getElementById('oiCamLd').style.display='flex';
+  document.getElementById('oiCamTxt').textContent='Starting camera...';
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:320,height:213}});
+    const v=document.getElementById('oiVid'); v.srcObject=stream;
+    document.getElementById('oiCamTxt').textContent='Loading AI model...';
+
+    const mp=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+    mp.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.72,minTrackingConfidence:0.65});
+    mp.onResults(oiOnResults);
+
+    const cam=new Camera(v,{onFrame:async()=>{await mp.send({image:v});},width:320,height:213});
+    await cam.start();
+
+    document.getElementById('oiCamLd').style.display='none';
+    document.getElementById('oiCamDot').className='dot ready';
+    document.getElementById('oiCamStatus').textContent='Camera active — sign a gesture';
+  }catch(e){
+    document.getElementById('oiCamLd').style.display='none';
+    document.getElementById('oiCamStatus').textContent='Camera error: '+e.message;
+  }
+}
+
+function oiOnResults(res){
+  const canvas=document.getElementById('oiCvs'),ctx=canvas.getContext('2d');
+  const v=document.getElementById('oiVid');
+  canvas.width=v.videoWidth; canvas.height=v.videoHeight;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(!res.multiHandLandmarks?.length){
+    oiHoldCount=0;
+    document.getElementById('oiMiniIcon').style.opacity='0';
+    document.getElementById('oiConfFill').style.width='0%';
+    document.getElementById('oiConfLbl').textContent='Ready';
+    return;
+  }
+
+  const lm=res.multiHandLandmarks[0];
+  drawConnectors(ctx,lm,HAND_CONNECTIONS,{color:'rgba(0,229,255,0.4)',lineWidth:1.5});
+  drawLandmarks(ctx,lm,{color:'#4f8cff',lineWidth:1,radius:2});
+
+  if(backendOk) oiSendBackend(lm); else oiDetectLocal(lm);
+}
+
+async function oiSendBackend(lm){
+  if(oiPending) return; oiPending=true;
+  try{
+    const pts=lm.map(p=>[p.x,p.y,p.z]);
+    const r=await fetch(`${API}/recognize`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({landmarks:pts}),signal:AbortSignal.timeout(800)});
+    const d=await r.json();
+    if(d.gesture){ const g=G.find(x=>x.id===d.gesture); oiProcess(d.gesture,d.en,d.ta,d.confidence,g?.icon||'🤟'); }
+    else oiHoldCount=0;
+  }catch{ oiDetectLocal(lm); }
+  finally{ oiPending=false; }
+}
+
+function oiDetectLocal(lm){
+  const i=fup(lm,8,6),m=fup(lm,12,10),r=fup(lm,16,14),p=fup(lm,20,18);
+  const tu=lm[4].y<lm[3].y&&lm[4].y<lm[2].y,td=lm[4].y>lm[3].y&&lm[4].y>lm[2].y;
+  const ae=i&&m&&r&&p,ac=!i&&!m&&!r&&!p;
+  let id=null;
+  if(tu&&ac)id='thumbs_up'; else if(td&&ac)id='thumbs_down';
+  else if(ae&&lm[0].y>lm[9].y)id='wave'; else if(ae)id='open_hand';
+  else if(ac)id='fist'; else if(i&&!m&&!r&&!p)id='pointing';
+  else if(i&&m&&!r&&!p)id=lm[8].x>lm[12].x?'crossed':'peace';
+  else if(i&&m&&r&&!p)id='three_fingers';
+  else if(d(lm[4],lm[8])<0.07&&m&&r&&p)id='ok_sign';
+  else if(d(lm[4],lm[8])<0.05&&!m&&!r)id='pinch';
+  else if(lm[4].x<lm[3].x&&p&&!i)id='call_me';
+  if(!id){oiHoldCount=0;return;}
+  const g=G.find(x=>x.id===id);
+  oiProcess(id,g.en,g.ta,null,g.icon);
+}
+
+function oiProcess(id,en,ta,conf,icon){
+  if(id===oiLastId)oiHoldCount++; else{oiLastId=id;oiHoldCount=1;}
+  const c=conf!=null?conf:Math.min(oiHoldCount/20,1);
+  const mi=document.getElementById('oiMiniIcon');
+  mi.textContent=icon; mi.style.opacity='1';
+  document.getElementById('oiConfFill').style.width=(c*100)+'%';
+  document.getElementById('oiConfLbl').textContent=Math.round(c*100)+'% confidence';
+  const thresh=backendOk?3:20;
+  if(oiHoldCount===thresh){ const now=Date.now(); if(now-oiLastTime>2000){oiLastTime=now;oiTrigger(id,en,ta,icon);} }
+}
+
+function oiTrigger(id,en,ta,icon){
+  oiLastEn=en; oiLastTa=ta;
+  document.getElementById('oiCurEn').textContent=en;
+  document.getElementById('oiCurTa').textContent=oiLangs.ta?ta:'';
+
+  const box=document.getElementById('oiCurrentBox');
+  const ind=document.getElementById('oiSpeakInd');
+  box.classList.add('speaking'); ind.classList.add('show');
+
+  if(oiAutoSpeak) oiSpeak(en,ta,()=>{ box.classList.remove('speaking'); ind.classList.remove('show'); });
+  else setTimeout(()=>{ box.classList.remove('speaking'); ind.classList.remove('show'); },2000);
+
+  // Add to history
+  oiHist.unshift({icon,en,ta}); if(oiHist.length>15)oiHist.pop();
+  oiRenderHist();
+  toast(icon+' Recognized!');
+}
+
+function oiSpeak(en,ta,onDone){
+  speechSynthesis.cancel();
+  const rate=parseFloat(document.getElementById('oiSpeed').value);
+  const vol=parseFloat(document.getElementById('oiVol').value);
+  const allUtts=[];
+  if(oiLangs.en){ const u=new SpeechSynthesisUtterance(en); const v=voices.find(x=>x.lang.startsWith('en-IN')||x.lang.startsWith('en')); if(v)u.voice=v; u.rate=rate;u.volume=vol;u.lang='en-IN'; allUtts.push(u); }
+  if(oiLangs.ta){ const u=new SpeechSynthesisUtterance(ta); u.rate=rate;u.volume=vol;u.lang='ta-IN'; allUtts.push(u); }
+  if(oiLangs.hi){ const u=new SpeechSynthesisUtterance(en); u.rate=rate;u.volume=vol;u.lang='hi-IN'; allUtts.push(u); }
+  if(!allUtts.length){if(onDone)onDone();return;}
+  allUtts[allUtts.length-1].onend=()=>{if(onDone)onDone();};
+  allUtts.forEach(u=>speechSynthesis.speak(u));
+}
+
+function oiRenderHist(){
+  const area=document.getElementById('oiHistArea');
+  if(!oiHist.length){area.innerHTML='<div class="oi-hi-empty">Responses appear here as you sign...</div>';return;}
+  area.innerHTML='';
+  oiHist.forEach(h=>{
+    const el=document.createElement('div'); el.className='oi-hi';
+    el.innerHTML=`<span class="oi-hi-icon">${h.icon}</span><div class="oi-hi-texts"><div class="oi-hi-en">${h.en}</div><div class="oi-hi-ta">${h.ta}</div></div><span style="font-size:11px;color:var(--text3);">▶</span>`;
+    el.onclick=()=>oiSpeak(h.en,h.ta,null);
+    area.appendChild(el);
+  });
+}
+
+function oiTogLang(l){
+  oiLangs[l]=!oiLangs[l];
+  document.getElementById('oil-'+l).classList.toggle('on',oiLangs[l]);
+}
+
+function oiTogSpeech(){
+  oiAutoSpeak=!oiAutoSpeak;
+  document.getElementById('oiSpeechTgl').classList.toggle('on',oiAutoSpeak);
+}
+
+function oiSpeakAgain(){ if(oiLastEn) oiSpeak(oiLastEn,oiLastTa,null); }
+
+function oiClear(){
+  oiHist=[]; oiRenderHist();
+  document.getElementById('oiCurEn').innerHTML='<span style="color:var(--text3);font-weight:300;font-size:clamp(14px,1.8vw,20px)">Waiting — sign a gesture to begin...</span>';
+  document.getElementById('oiCurTa').textContent='';
+  speechSynthesis.cancel();
+}
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
 </script>
 </body>
