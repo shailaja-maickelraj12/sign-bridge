@@ -1,36 +1,27 @@
 @echo off
 echo =============================================
-echo   SignBridge - Auto Setup and Run
+echo   SignBridge v2.0 - Auto Setup and Run
 echo =============================================
 echo.
 
-REM Check if Python is installed
 python --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    echo [ERROR] Python is not installed!
-    echo.
-    echo Please install Python first:
-    echo 1. Go to https://www.python.org/downloads/
-    echo 2. Download Python 3.11 or newer
-    echo 3. During install, CHECK the box "Add Python to PATH"
-    echo 4. Run this file again after installing
-    echo.
+    echo [ERROR] Python not installed!
+    echo Go to https://www.python.org/downloads/
+    echo Check "Add Python to PATH" during install.
     pause
     exit /b 1
 )
-
 echo [OK] Python found.
 echo.
-
-REM Install dependencies
 echo Installing required packages...
-pip install flask flask-cors numpy
+pip install flask flask-cors flask-socketio numpy eventlet
 echo.
-
-REM Start the server
 echo =============================================
-echo   Starting SignBridge Backend Server...
-echo   Open frontend\index.html in Chrome
+echo   Starting SignBridge Backend  (v2.0)
+echo   REST   ->  http://localhost:5000
+echo   WS     ->  ws://localhost:5000
+echo   Open frontend/index.html in Chrome
 echo =============================================
 echo.
 cd backend
