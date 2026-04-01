@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignBridge — Online Interview Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03050a;
+  --s1: #080c14;
+  --s2: #0e1420;
+  --s3: #151d2e;
+  --border: rgba(56,189,248,0.12);
+  --border2: rgba(56,189,248,0.25);
+  --cyan: #38bdf8;
+  --cyan2: #7dd3fc;
+  --cyan-dim: rgba(56,189,248,0.08);
+  --green: #4ade80;
+  --green-dim: rgba(74,222,128,0.1);
+  --amber: #fbbf24;
+  --red: #f87171;
+  --tx: #f0f9ff;
+  --tx2: #7ea8c4;
+  --tx3: #2a4a64;
+  --mono: 'DM Sans', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Subtle grid */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(56,189,248,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56,189,248,0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── SETUP SCREEN ── */
+#setupScreen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 40px;
+}
+
+.setup-logo {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 40px;
+}
+
+.setup-mark {
+  width: 48px; height: 48px;
+  background: var(--cyan);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  box-shadow: 0 0 30px rgba(56,189,248,0.4);
+}
+
+.setup-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px; font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.setup-title span { color: var(--cyan); }
+
+.setup-card {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 36px;
+  width: min(560px, 100%);
+  margin-bottom: 20px;
+}
+
+.setup-card h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px; font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--tx);
+}
+
+.step-list {
+  display: flex; flex-direction: column; gap: 14px;
+  margin-bottom: 28px;
+}
+
+.step {
+  display: flex; align-items: flex-start; gap: 14px;
+}
+
+.step-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--cyan-dim);
+  border: 1px solid var(--border2);
+  color: var(--cyan);
+  font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-text { font-size: 14px; color: var(--tx2); line-height: 1.5; padding-top: 4px; }
+.step-text strong { color: var(--tx); font-weight: 500; }
+
+.platform-row {
+  display: flex; gap: 10px; margin-bottom: 24px;
+}
+
+.platform-btn {
+  flex: 1; padding: 12px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--tx2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  text-align: center;
+}
+
+.platform-btn:hover { border-color: var(--border2); color: var(--tx); }
+.platform-btn.active { background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan); }
+
+.name-input {
+  width: 100%; padding: 12px 16px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--tx);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px; outline: none;
+  margin-bottom: 20px;
+  transition: border-color 0.2s;
+}
+
+.name-input:focus { border-color: var(--cyan); }
+.name-input::placeholder { color: var(--tx3); }
+
+.begin-btn {
+  width: 100%; padding: 16px;
+  background: var(--cyan);
+  border: none; border-radius: 12px;
+  color: #03050a;
+  font-family: 'Syne', sans-serif;
+  font-size: 16px; font-weight: 800;
+  cursor: pointer; transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.begin-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+/* ── MAIN INTERVIEW SCREEN ── */
+#mainScreen {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* TOP BAR */
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.top-left { display: flex; align-items: center; gap: 12px; }
+
+.brand {
+  font-family: 'Syne', sans-serif;
+  font-size: 15px; font-weight: 800;
+  color: var(--tx2);
+}
+
+.brand span { color: var(--cyan); }
+
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.2);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--green);
+}
+
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+
+.platform-tag {
+  padding: 4px 12px; border-radius: 20px;
+  background: var(--cyan-dim);
+  border: 1px solid var(--border2);
+  font-size: 11px; color: var(--cyan); font-weight: 500;
+}
+
+.top-right { display: flex; align-items: center; gap: 10px; }
+
+.top-btn {
+  padding: 6px 14px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--s2);
+  color: var(--tx2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.top-btn:hover { border-color: var(--border2); color: var(--tx); }
+.top-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+/* CAMERA STRIP */
+.cam-strip {
+  display: flex; gap: 0;
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.cam-box {
+  position: relative;
+  width: 180px; height: 120px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #000;
+  flex-shrink: 0;
+}
+
+#camVid { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); }
+#camCvs { position:absolute; inset:0; width:100%; height:100%; transform:scaleX(-1); }
+
+.cam-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--tx2);
+}
+
+.cam-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--tx3);
+}
+
+.cam-dot.on { background: var(--green); animation: pulse 1.5s infinite; }
+.cam-dot.detecting { background: var(--cyan); animation: pulse 0.7s infinite; }
+
+.gesture-mini {
+  flex: 1;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.gesture-mini-icon {
+  font-size: 28px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.gesture-mini-icon.show { opacity: 1; }
+
+.conf-mini {
+  flex: 1;
+  max-width: 200px;
+}
+
+.conf-mini-lbl { font-size: 10px; color: var(--tx3); margin-bottom: 3px; }
+.conf-mini-bg { height: 3px; border-radius: 2px; background: var(--s3); overflow: hidden; }
+.conf-mini-fill { height: 100%; border-radius: 2px; background: var(--cyan); width: 0%; transition: width 0.2s; }
+
+.share-hint {
+  padding: 8px 14px;
+  background: rgba(251,191,36,0.08);
+  border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 8px;
+  font-size: 12px; color: var(--amber);
+  flex-shrink: 0;
+}
+
+/* MAIN DISPLAY — what interviewer sees */
+.display-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px;
+  overflow: hidden;
+}
+
+.interviewer-label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--tx3); margin-bottom: 16px;
+}
+
+/* CURRENT SENTENCE — big */
+.current-box {
+  background: var(--s1);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 16px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.current-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+  background: var(--cyan);
+  border-radius: 4px 0 0 4px;
+}
+
+.current-box.speaking::before {
+  animation: bar-pulse 0.8s infinite;
+}
+
+@keyframes bar-pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.current-en {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(22px, 3.5vw, 40px);
+  font-weight: 700;
+  color: var(--tx);
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+  min-height: 48px;
+}
+
+.current-ta {
+  font-size: clamp(16px, 2.5vw, 28px);
+  font-weight: 300;
+  color: var(--cyan2);
+  margin-top: 10px;
+  line-height: 1.4;
+  min-height: 36px;
+}
+
+.speaking-indicator {
+  position: absolute;
+  top: 16px; right: 20px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--green);
+  opacity: 0; transition: opacity 0.3s;
+}
+
+.speaking-indicator.show { opacity: 1; }
+.speak-bars { display: flex; gap: 2px; align-items: flex-end; height: 16px; }
+.speak-bar { width: 3px; background: var(--green); border-radius: 2px; animation: bar-anim 0.8s infinite; }
+.speak-bar:nth-child(2) { animation-delay: 0.15s; }
+.speak-bar:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bar-anim { 0%,100%{height:4px} 50%{height:14px} }
+
+/* HISTORY */
+.history-area {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-area::-webkit-scrollbar { width: 4px; }
+.history-area::-webkit-scrollbar-thumb { background: var(--s3); border-radius: 2px; }
+
+.hist-item {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.hist-item:hover { border-color: var(--border2); }
+
+.hist-icon { font-size: 20px; flex-shrink: 0; }
+
+.hist-texts { flex: 1; overflow: hidden; }
+.hist-en { font-size: 14px; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hist-ta { font-size: 12px; color: var(--tx2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.hist-replay {
+  font-size: 11px; color: var(--tx3);
+  flex-shrink: 0; padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.hist-empty {
+  font-size: 14px; color: var(--tx3);
+  text-align: center; padding: 30px;
+}
+
+/* BOTTOM BAR */
+.bottom-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px;
+  background: var(--s1);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.auto-speak-toggle {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--tx2);
+  cursor: pointer;
+}
+
+.toggle {
+  width: 36px; height: 20px;
+  background: var(--s3);
+  border-radius: 10px;
+  position: relative;
+  transition: background 0.2s;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.toggle.on { background: var(--cyan); }
+
+.toggle-knob {
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle.on .toggle-knob { transform: translateX(16px); }
+
+.speed-ctrl {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--tx2);
+}
+
+input[type=range] {
+  width: 80px; height: 3px; -webkit-appearance: none;
+  background: var(--s3); border-radius: 2px; outline: none;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px;
+  border-radius: 50%; background: var(--cyan); cursor: pointer;
+}
+
+.bottom-right {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.speak-now-btn {
+  padding: 8px 20px;
+  background: var(--cyan);
+  border: none; border-radius: 8px;
+  color: #03050a;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.speak-now-btn:hover { filter: brightness(1.1); }
+
+.clear-btn {
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--tx2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+
+.clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* LOADING */
+.ldov {
+  position: absolute; inset: 0;
+  background: rgba(3,5,10,0.92);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 20; border-radius: 10px; gap: 10px;
+}
+
+.spin {
+  width: 28px; height: 28px;
+  border: 2px solid var(--s3);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: sp 0.8s linear infinite;
+}
+
+@keyframes sp { to { transform: rotate(360deg); } }
+.ldtxt { font-size: 12px; color: var(--tx2); }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 70px; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--s3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px; color: var(--tx);
+  z-index: 999; pointer-events: none;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP SCREEN ══ -->
+<div id="setupScreen">
+  <div class="setup-logo">
+    <div class="setup-mark">🤟</div>
+    <div class="setup-title">Sign<span>Bridge</span> Online</div>
+  </div>
+
+  <div class="setup-card">
+    <h2>Online Interview Setup</h2>
+
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Join your <strong>Google Meet or Zoom</strong> call and make sure your interviewer is connected</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">Enter your name below and select your platform</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">Click <strong>Start Interview</strong> — then <strong>share this browser tab</strong> on your video call so the interviewer can see your responses</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">Sign your gestures — text and speech appear automatically on screen</div>
+      </div>
+    </div>
+
+    <div style="font-size:12px;color:var(--tx3);margin-bottom:10px;letter-spacing:0.5px;">SELECT PLATFORM</div>
+    <div class="platform-row">
+      <button class="platform-btn active" id="pb-meet" onclick="setPlatform('Google Meet')">📹 Google Meet</button>
+      <button class="platform-btn"        id="pb-zoom" onclick="setPlatform('Zoom')">💻 Zoom</button>
+      <button class="platform-btn"        id="pb-teams" onclick="setPlatform('MS Teams')">🟦 MS Teams</button>
+    </div>
+
+    <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;letter-spacing:0.5px;">YOUR NAME (shown on screen)</div>
+    <input class="name-input" id="candidateName" placeholder="e.g. Arjun Kumar" maxlength="40">
+
+    <button class="begin-btn" onclick="beginInterview()">🚀 &nbsp; Start Interview</button>
+  </div>
+</div>
+
+<!-- ══ MAIN INTERVIEW SCREEN ══ -->
+<div id="mainScreen">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="brand">Sign<span>Bridge</span></div>
+      <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+      <div class="platform-tag" id="platformTag">Google Meet</div>
+      <div class="platform-tag" id="candidateTag" style="border-color:rgba(251,191,36,0.3);color:var(--amber);background:rgba(251,191,36,0.07);">Candidate</div>
+    </div>
+    <div class="top-right">
+      <div style="font-size:12px;color:var(--tx3)" id="timerDisplay">00:00</div>
+      <button class="top-btn" onclick="toggleAutoSpeak()">🔊 Auto-speak: ON</button>
+      <button class="top-btn danger" onclick="endInterview()">✕ End</button>
+    </div>
+  </div>
+
+  <!-- CAMERA STRIP -->
+  <div class="cam-strip">
+    <div class="cam-box">
+      <video id="camVid" autoplay playsinline muted></video>
+      <canvas id="camCvs"></canvas>
+      <div class="ldov" id="camLd">
+        <div class="spin"></div>
+        <div class="ldtxt" id="camLdTxt">Starting camera...</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <div class="cam-status">
+        <span class="cam-dot" id="camDot"></span>
+        <span id="camTxt">Camera off</span>
+      </div>
+      <div class="cam-status" style="margin-top:2px;">
+        <span style="font-size:10px;color:var(--tx3)">BACKEND:</span>
+        <span style="font-size:11px;color:var(--tx3)" id="bkTxt">Checking...</span>
+      </div>
+    </div>
+
+    <div class="gesture-mini">
+      <span class="gesture-mini-icon" id="miniIcon">👋</span>
+      <div class="conf-mini">
+        <div class="conf-mini-lbl" id="confLbl">Ready</div>
+        <div class="conf-mini-bg"><div class="conf-mini-fill" id="confFill"></div></div>
+      </div>
+    </div>
+
+    <div class="share-hint">
+      📺 &nbsp; Share <strong>this tab</strong> on your video call — interviewer will see the text below
+    </div>
+  </div>
+
+  <!-- MAIN DISPLAY -->
+  <div class="display-area">
+    <div class="interviewer-label">👀 Interviewer sees this ↓</div>
+
+    <!-- Current recognized text -->
+    <div class="current-box" id="currentBox">
+      <div class="speaking-indicator" id="speakInd">
+        <div class="speak-bars">
+          <div class="speak-bar"></div>
+          <div class="speak-bar"></div>
+          <div class="speak-bar"></div>
+        </div>
+        Speaking...
+      </div>
+      <div class="current-en" id="currentEn">
+        <span style="color:var(--tx3);font-weight:300;font-family:'DM Sans';font-size:clamp(16px,2vw,22px)">Waiting for gesture — sign to begin...</span>
+      </div>
+      <div class="current-ta" id="currentTa"></div>
+    </div>
+
+    <!-- History -->
+    <div style="font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;">Previous responses</div>
+    <div class="history-area" id="histArea">
+      <div class="hist-empty">Responses will appear here as you sign...</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar">
+    <div class="auto-speak-toggle" onclick="toggleAutoSpeak()">
+      <div class="toggle on" id="autoToggle"><div class="toggle-knob"></div></div>
+      <span>Auto-speak</span>
+    </div>
+
+    <div class="speed-ctrl">
+      <span>Speed</span>
+      <input type="range" min="0.6" max="1.8" step="0.1" value="1" id="speedR"
+        oninput="document.getElementById('speedV').textContent=parseFloat(this.value).toFixed(1)+'x'">
+      <span id="speedV">1.0x</span>
+    </div>
+
+    <div class="speed-ctrl">
+      <span>Vol</span>
+      <input type="range" min="0" max="1" step="0.05" value="1" id="volR"
+        oninput="document.getElementById('volV').textContent=Math.round(this.value*100)+'%'">
+      <span id="volV">100%</span>
+    </div>
+
+    <div class="bottom-right">
+      <button class="clear-btn" onclick="clearAll()">Clear</button>
+      <button class="speak-now-btn" onclick="speakCurrent()">🔊 Speak again</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MediaPipe -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
+<script>
+const API = 'http://localhost:5000/api';
+
+// ── GESTURE DATA ──
+const G = [
+  {id:'thumbs_up',   icon:'👍',en:'Yes, I understand.',                         ta:'ஆம், புரிகிறது.'},
+  {id:'thumbs_down', icon:'👎',en:'No, that is not correct.',                   ta:'இல்லை, அது சரியில்லை.'},
+  {id:'open_hand',   icon:'✋',en:'Please give me a moment to think.',          ta:'சிறிது நேரம் சிந்திக்க அனுமதியுங்கள்.'},
+  {id:'fist',        icon:'✊',en:'I understand the question.',                 ta:'கேள்வி புரிகிறது.'},
+  {id:'pointing',    icon:'☝️',en:'I have one important point to make.',        ta:'ஒரு முக்கியமான கருத்து சொல்ல வேண்டும்.'},
+  {id:'peace',       icon:'✌️',en:'Thank you very much for this opportunity.',  ta:'இந்த வாய்ப்பிற்கு மிக்க நன்றி.'},
+  {id:'ok_sign',     icon:'👌',en:'That sounds perfect to me.',                 ta:'அது எனக்கு சரியாக இருக்கிறது.'},
+  {id:'call_me',     icon:'🤙',en:'Please feel free to contact me anytime.',    ta:'எந்த நேரத்திலும் தொடர்பு கொள்ளலாம்.'},
+  {id:'wave',        icon:'👋',en:'Hello! Thank you for having me today.',      ta:'வணக்கம்! இன்று என்னை அழைத்தமைக்கு நன்றி.'},
+  {id:'three_fingers',icon:'🤟',en:'I have 3 years of experience in this field.',ta:'இந்த துறையில் எனக்கு 3 வருட அனுபவம் உள்ளது.'},
+  {id:'pinch',       icon:'🤌',en:'That is an excellent point.',                ta:'அது சிறந்த கருத்து.'},
+  {id:'crossed',     icon:'🙅',en:'I respectfully disagree with that point.',   ta:'அந்த கருத்தை மரியாதையுடன் மறுக்கிறேன்.'},
+];
+
+// ── STATE ──
+let platform='Google Meet', candidateName='Candidate';
+let autoSpeak=true, backendOk=false;
+let voices=[], hist=[], lastEn='', lastTa='';
+let lastId=null, holdCount=0, lastTime=0, pending=false;
+let timerSec=0, timerInterval=null;
+
+// ── SETUP ──
+function setPlatform(p){
+  platform=p;
+  ['meet','zoom','teams'].forEach(k=>{
+    document.getElementById('pb-'+k).classList.remove('active');
+  });
+  const map={'Google Meet':'meet','Zoom':'zoom','MS Teams':'teams'};
+  document.getElementById('pb-'+map[p])?.classList.add('active');
+}
+
+function beginInterview(){
+  const name = document.getElementById('candidateName').value.trim();
+  candidateName = name || 'Candidate';
+  document.getElementById('candidateTag').textContent = candidateName;
+  document.getElementById('platformTag').textContent = platform;
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('mainScreen').style.display = 'flex';
+  startTimer();
+  startCamera();
+  checkBackend();
+  setInterval(checkBackend, 8000);
+  loadVoices();
+  if(speechSynthesis.onvoiceschanged!==undefined) speechSynthesis.onvoiceschanged=loadVoices;
+  toast('Interview started! Share this tab on '+platform);
+}
+
+// ── TIMER ──
+function startTimer(){
+  timerInterval = setInterval(()=>{
+    timerSec++;
+    const m=String(Math.floor(timerSec/60)).padStart(2,'0');
+    const s=String(timerSec%60).padStart(2,'0');
+    document.getElementById('timerDisplay').textContent=`${m}:${s}`;
+  },1000);
+}
+
+// ── BACKEND ──
+async function checkBackend(){
+  try{
+    const r=await fetch('http://localhost:5000',{signal:AbortSignal.timeout(2000)});
+    if(r.ok){ backendOk=true; document.getElementById('bkTxt').textContent='Connected ✓'; document.getElementById('bkTxt').style.color='var(--green)'; }
+    else setBackendOff();
+  }catch{ setBackendOff(); }
+}
+
+function setBackendOff(){
+  backendOk=false;
+  document.getElementById('bkTxt').textContent='Offline (browser mode)';
+  document.getElementById('bkTxt').style.color='var(--amber)';
+}
+
+// ── VOICES ──
+function loadVoices(){
+  voices=speechSynthesis.getVoices();
+}
+
+// ── CAMERA ──
+async function startCamera(){
+  const ld=document.getElementById('camLd'); ld.style.display='flex';
+  document.getElementById('camLdTxt').textContent='Starting camera...';
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{width:320,height:213}});
+    const v=document.getElementById('camVid'); v.srcObject=stream;
+
+    document.getElementById('camLdTxt').textContent='Loading AI model...';
+
+    const mp=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+    mp.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.72,minTrackingConfidence:0.65});
+    mp.onResults(onResults);
+
+    const cam=new Camera(v,{onFrame:async()=>{await mp.send({image:v});},width:320,height:213});
+    await cam.start();
+
+    ld.style.display='none';
+    setCamStatus('on','Camera active — sign a gesture');
+  }catch(e){
+    ld.style.display='none';
+    setCamStatus('','Camera error: '+e.message);
+    toast('Camera error: '+e.message);
+  }
+}
+
+function setCamStatus(type,txt){
+  document.getElementById('camDot').className='cam-dot '+(type||'');
+  document.getElementById('camTxt').textContent=txt;
+}
+
+// ── HAND RESULTS ──
+function onResults(res){
+  const canvas=document.getElementById('camCvs'),ctx=canvas.getContext('2d');
+  const v=document.getElementById('camVid');
+  canvas.width=v.videoWidth; canvas.height=v.videoHeight;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  if(!res.multiHandLandmarks?.length){
+    holdCount=0;
+    setCamStatus('on','Camera active — sign a gesture');
+    document.getElementById('miniIcon').classList.remove('show');
+    document.getElementById('confFill').style.width='0%';
+    document.getElementById('confLbl').textContent='Ready';
+    return;
+  }
+
+  const lm=res.multiHandLandmarks[0];
+  drawConnectors(ctx,lm,HAND_CONNECTIONS,{color:'rgba(56,189,248,0.4)',lineWidth:1.5});
+  drawLandmarks(ctx,lm,{color:'#38bdf8',lineWidth:1,radius:2});
+
+  setCamStatus('detecting','Detecting gesture...');
+  if(backendOk) sendToBackend(lm);
+  else detectLocal(lm);
+}
+
+// ── BACKEND RECOGNITION ──
+async function sendToBackend(lm){
+  if(pending) return; pending=true;
+  try{
+    const pts=lm.map(p=>[p.x,p.y,p.z]);
+    const r=await fetch(`${API}/recognize`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({landmarks:pts}),signal:AbortSignal.timeout(800)
+    });
+    const d=await r.json();
+    if(d.gesture){
+      const g=G.find(x=>x.id===d.gesture);
+      processGesture(d.gesture,d.en,d.ta,d.confidence,g?.icon||'🤟');
+    } else { holdCount=0; }
+  }catch{ detectLocal(lm); }
+  finally{ pending=false; }
+}
+
+// ── LOCAL DETECTION ──
+function dst(a,b){return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2);}
+function fup(lm,t,p){return lm[t].y<lm[p].y;}
+function detectLocal(lm){
+  const i=fup(lm,8,6),m=fup(lm,12,10),r=fup(lm,16,14),p=fup(lm,20,18);
+  const tu=lm[4].y<lm[3].y&&lm[4].y<lm[2].y,td=lm[4].y>lm[3].y&&lm[4].y>lm[2].y;
+  const ae=i&&m&&r&&p,ac=!i&&!m&&!r&&!p;
+  let id=null;
+  if(tu&&ac) id='thumbs_up';
+  else if(td&&ac) id='thumbs_down';
+  else if(ae&&lm[0].y>lm[9].y) id='wave';
+  else if(ae) id='open_hand';
+  else if(ac) id='fist';
+  else if(i&&!m&&!r&&!p) id='pointing';
+  else if(i&&m&&!r&&!p) id=lm[8].x>lm[12].x?'crossed':'peace';
+  else if(i&&m&&r&&!p) id='three_fingers';
+  else if(dst(lm[4],lm[8])<0.07&&m&&r&&p) id='ok_sign';
+  else if(dst(lm[4],lm[8])<0.05&&!m&&!r) id='pinch';
+  else if(lm[4].x<lm[3].x&&p&&!i) id='call_me';
+  if(!id){holdCount=0;return;}
+  const g=G.find(x=>x.id===id);
+  processGesture(id,g.en,g.ta,null,g.icon);
+}
+
+// ── PROCESS GESTURE ──
+function processGesture(id,en,ta,conf,icon){
+  if(id===lastId) holdCount++; else{lastId=id;holdCount=1;}
+  const c=conf!=null?conf:Math.min(holdCount/20,1);
+
+  document.getElementById('miniIcon').textContent=icon;
+  document.getElementById('miniIcon').classList.add('show');
+  document.getElementById('confFill').style.width=(c*100)+'%';
+  document.getElementById('confLbl').textContent=`${Math.round(c*100)}% confidence`;
+
+  const thresh=backendOk?3:20;
+  if(holdCount===thresh){
+    const now=Date.now();
+    if(now-lastTime>2000){ lastTime=now; trigger(id,en,ta,icon); }
+  }
+}
+
+function trigger(id,en,ta,icon){
+  lastEn=en; lastTa=ta;
+
+  // Update main display
+  document.getElementById('currentEn').textContent=en;
+  document.getElementById('currentTa').textContent=ta;
+
+  // Speaking animation
+  const box=document.getElementById('currentBox');
+  const ind=document.getElementById('speakInd');
+  box.classList.add('speaking');
+  ind.classList.add('show');
+
+  if(autoSpeak){
+    speak(en,ta,()=>{
+      box.classList.remove('speaking');
+      ind.classList.remove('show');
+    });
+  } else {
+    setTimeout(()=>{
+      box.classList.remove('speaking');
+      ind.classList.remove('show');
+    },2000);
+  }
+
+  addHist(icon,en,ta);
+  setCamStatus('on','Recognized! Sign next gesture...');
+}
+
+// ── SPEAK ──
+function speak(en,ta,onDone){
+  speechSynthesis.cancel();
+  const rate=parseFloat(document.getElementById('speedR').value);
+  const vol=parseFloat(document.getElementById('volR').value);
+
+  const u=new SpeechSynthesisUtterance(en);
+  const enVoice=voices.find(v=>v.lang.startsWith('en-IN')||v.lang.startsWith('en'));
+  if(enVoice) u.voice=enVoice;
+  u.rate=rate; u.volume=vol; u.lang='en-IN';
+
+  u.onend=()=>{
+    const u2=new SpeechSynthesisUtterance(ta);
+    u2.rate=rate; u2.volume=vol; u2.lang='ta-IN';
+    u2.onend=()=>{ if(onDone) onDone(); };
+    speechSynthesis.speak(u2);
+  };
+
+  speechSynthesis.speak(u);
+}
+
+function speakCurrent(){ if(lastEn) speak(lastEn,lastTa,null); }
+
+// ── HISTORY ──
+function addHist(icon,en,ta){
+  hist.unshift({icon,en,ta});
+  if(hist.length>20) hist.pop();
+  renderHist();
+}
+
+function renderHist(){
+  const area=document.getElementById('histArea');
+  if(!hist.length){
+    area.innerHTML='<div class="hist-empty">Responses will appear here as you sign...</div>';
+    return;
+  }
+  area.innerHTML='';
+  hist.forEach(h=>{
+    const el=document.createElement('div'); el.className='hist-item';
+    el.innerHTML=`
+      <span class="hist-icon">${h.icon}</span>
+      <div class="hist-texts">
+        <div class="hist-en">${h.en}</div>
+        <div class="hist-ta">${h.ta}</div>
+      </div>
+      <span class="hist-replay">▶ replay</span>
+    `;
+    el.onclick=()=>speak(h.en,h.ta,null);
+    area.appendChild(el);
+  });
+}
+
+// ── CONTROLS ──
+function toggleAutoSpeak(){
+  autoSpeak=!autoSpeak;
+  document.getElementById('autoToggle').classList.toggle('on',autoSpeak);
+  document.querySelector('.top-btn').textContent='🔊 Auto-speak: '+(autoSpeak?'ON':'OFF');
+  toast('Auto-speak '+(autoSpeak?'enabled':'disabled'));
+}
+
+function clearAll(){
+  hist=[];
+  renderHist();
+  document.getElementById('currentEn').innerHTML='<span style="color:var(--tx3);font-weight:300;font-family:\'DM Sans\';font-size:clamp(16px,2vw,22px)">Waiting for gesture — sign to begin...</span>';
+  document.getElementById('currentTa').textContent='';
+  speechSynthesis.cancel();
+}
+
+function endInterview(){
+  if(confirm('End this interview session?')){
+    clearInterval(timerInterval);
+    speechSynthesis.cancel();
+    document.getElementById('mainScreen').style.display='none';
+    document.getElementById('setupScreen').style.display='flex';
+    timerSec=0;
+    document.getElementById('timerDisplay').textContent='00:00';
+    hist=[];
+  }
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+</script>
+</body>
+</html>

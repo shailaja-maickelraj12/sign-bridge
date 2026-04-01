@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignBridge — Live Interview</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --bg: #03050a;
+            --card: #0e1420;
+            --border: rgba(102, 126, 234, 0.2);
+            --text: #f0f9ff;
+            --text-dim: #7ea8c4;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            min-height: 100vh;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 15px 20px;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .main-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            min-width: 0;
+        }
+
+        .video-section {
+            flex: 1;
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: #fb5a5a;
+        }
+
+        .btn-success {
+            background: var(--success);
+        }
+
+        .btn-success:hover {
+            background: #3dd66f;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: #000;
+        }
+
+        .btn-warning:hover {
+            background: #fac858;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sidebar-section {
+            background: rgba(102, 126, 234, 0.1);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .sidebar-section h3 {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .room-info-item {
+            font-size: 12px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .room-info-item label {
+            color: var(--text-dim);
+            display: block;
+            font-size: 11px;
+        }
+
+        .room-info-item .value {
+            color: var(--text);
+            word-break: break-all;
+            margin-top: 2px;
+        }
+
+        .gesture-box {
+            background: var(--bg);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+
+        .gesture-box .en {
+            color: var(--success);
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .gesture-box .ta {
+            color: #38bdf8;
+        }
+
+        .gesture-box .meta {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .confidence {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .message {
+            padding: 8px;
+            background: var(--bg);
+            border-radius: 6px;
+            font-size: 11px;
+            line-height: 1.4;
+            border-left: 3px solid #38bdf8;
+        }
+
+        .message.gesture {
+            border-left-color: var(--success);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: var(--success);
+            color: #000;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .status-badge.inactive {
+            background: var(--danger);
+        }
+
+        .gesture-history {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤝 SignBridge Live Interview</h1>
+        <p>Gesture Recognition & Real-time Communication</p>
+    </div>
+
+    <div class="container">
+        <div class="main-section">
+            <div class="video-section">
+                <video id="video" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+            </div>
+            <div class="controls">
+                <button id="startBtn" class="btn-primary">📷 Start Camera</button>
+                <button id="stopBtn" class="btn-danger" disabled>⛔ Stop Camera</button>
+                <button id="recordBtn" class="btn-warning" disabled>🎥 Record</button>
+                <button id="stopRecordBtn" class="btn-danger" disabled>⏹️ Stop Record</button>
+                <button id="endCallBtn" class="btn-danger" disabled>📞 End Interview</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h3>📍 Room Information</h3>
+                <div class="room-info-item">
+                    <label>Room ID</label>
+                    <div class="value" id="roomId">—</div>
+                </div>
+                <div class="room-info-item">
+                    <label>Candidate</label>
+                    <div class="value" id="candidateName">—</div>
+                </div>
+                <div class="room-info-item">
+                    <label>Role</label>
+                    <div class="value" id="roleType">—</div>
+                </div>
+                <div class="room-info-item">
+                    <label>Status</label>
+                    <div class="value"><span class="status-badge inactive" id="statusBadge">Disconnected</span></div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>👋 Gesture Recognition</h3>
+                <div id="gestureHistory" class="gesture-history">
+                    <p style="color: var(--text-dim); font-size: 11px;">Detected gestures will appear here...</p>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>💬 Messages</h3>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message">System ready. Start camera to begin.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // Configuration & State
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        const config = {
+            api: new URL(document.querySelector('body')).searchParams.get('api') || 'http://localhost:5000/api',
+            roomId: new URL(document.querySelector('body')).searchParams.get('room') || 'room_default',
+            candidateName: new URL(document.querySelector('body')).searchParams.get('name') || 'Candidate',
+            role: new URL(document.querySelector('body')).searchParams.get('role') || 'candidate'
+        };
+
+        let mediaStream = null;
+        let hands = null;
+        let camera = null;
+        let recordedChunks = [];
+        let mediaRecorder = null;
+        let gestureBuffer = [];
+        let lastGestureTime = 0;
+        let gestureDebounceMs = 500; // Avoid duplicate detections
+        let cameraActive = false;
+
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // UI Updates
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        function setupRoomInfo() {
+            document.getElementById('roomId').textContent = config.roomId;
+            document.getElementById('candidateName').textContent = config.candidateName;
+            document.getElementById('roleType').textContent = config.role;
+        }
+
+        function addMessage(text, type = 'system') {
+            const messagesDiv = document.getElementById('chatMessages');
+            const msgEl = document.createElement('div');
+            msgEl.className = `message ${type}`;
+            msgEl.textContent = text;
+            messagesDiv.appendChild(msgEl);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function addGestureDetection(gesture) {
+            const historyDiv = document.getElementById('gestureHistory');
+            if (historyDiv.innerHTML.includes('Detected gestures will appear')) {
+                historyDiv.innerHTML = '';
+            }
+
+            const gestureEl = document.createElement('div');
+            gestureEl.className = 'gesture-box';
+            gestureEl.innerHTML = `
+                <div class="en">${gesture.en || '—'}</div>
+                <div class="ta">${gesture.ta || '—'}</div>
+                <div class="meta">
+                    <span>${gesture.gesture || '?'}</span>
+                    <span class="confidence">${(gesture.confidence * 100).toFixed(0)}%</span>
+                </div>
+            `;
+            historyDiv.insertBefore(gestureEl, historyDiv.firstChild);
+
+            // Keep only last 10 gestures
+            while (historyDiv.children.length > 10) {
+                historyDiv.removeChild(historyDiv.lastChild);
+            }
+
+            addMessage(`✋ Gesture: ${gesture.en}`, 'gesture');
+        }
+
+        function setStatus(isActive) {
+            const badge = document.getElementById('statusBadge');
+            badge.textContent = isActive ? 'Recording' : 'Disconnected';
+            badge.classList.toggle('inactive', !isActive);
+        }
+
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // MediaPipe Hand Detection Setup
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        async function initializeHands() {
+            hands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+
+            hands.setOptions({
+                maxNumHands: 2,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.5,
+                minTrackingConfidence: 0.5
+            });
+
+            hands.onResults(onHandsResults);
+        }
+
+        function onHandsResults(results) {
+            const canvasElement = document.getElementById('canvas');
+            const canvasCtx = canvasElement.getContext('2d');
+
+            canvasElement.width = canvasElement.offsetWidth;
+            canvasElement.height = canvasElement.offsetHeight;
+
+            // Draw on canvas
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Draw hand landmarks if detected
+            if (results.multiHandLandmarks) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#38bdf8', lineWidth: 2 });
+                    drawLandmarks(canvasCtx, landmarks, { color: '#667eea', lineWidth: 1, radius: 3 });
+
+                    // Send to backend for recognition
+                    recognizeGestureFromLandmarks(landmarks);
+                }
+            }
+
+            canvasCtx.restore();
+        }
+
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // Gesture Recognition API Call
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        async function recognizeGestureFromLandmarks(landmarks) {
+            const now = Date.now();
+            if (now - lastGestureTime < gestureDebounceMs) return;
+
+            try {
+                const response = await fetch(`${config.api}/recognize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ landmarks })
+                });
+
+                const data = await response.json();
+
+                if (data.gesture && data.gesture !== 'None') {
+                    lastGestureTime = now;
+                    addGestureDetection(data);
+                }
+            } catch (error) {
+                console.error('Gesture recognition error:', error);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // Camera Control
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: true
+                });
+
+                const video = document.getElementById('video');
+                video.srcObject = mediaStream;
+
+                // Setup MediaPipe camera
+                await initializeHands();
+                camera = new Camera(video, {
+                    onFrame: async () => {
+                        await hands.send({ image: video });
+                    },
+                    width: 1280,
+                    height: 720
+                });
+
+                camera.start();
+                cameraActive = true;
+
+                // Update UI
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('recordBtn').disabled = false;
+                document.getElementById('endCallBtn').disabled = false;
+
+                setStatus(true);
+                addMessage('📷 Camera started. Hand gestures will be recognized...');
+            } catch (error) {
+                alert('Camera access denied: ' + error.message);
+                addMessage('❌ Camera access denied', 'error');
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            if (camera) {
+                camera.stop();
+                camera = null;
+            }
+
+            if (hands) {
+                hands.close();
+                hands = null;
+            }
+
+            cameraActive = false;
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('recordBtn').disabled = true;
+            document.getElementById('endCallBtn').disabled = true;
+            setStatus(false);
+
+            addMessage('📷 Camera stopped');
+        });
+
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // Recording Functions
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        document.getElementById('recordBtn').addEventListener('click', () => {
+            if (!mediaStream) return;
+
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(mediaStream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `interview_${config.roomId}.webm`;
+                a.click();
+                addMessage('✅ Recording saved');
+            };
+
+            mediaRecorder.start();
+            document.getElementById('recordBtn').disabled = true;
+            document.getElementById('stopRecordBtn').disabled = false;
+            addMessage('🎥 Recording started');
+        });
+
+        document.getElementById('stopRecordBtn').addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                document.getElementById('recordBtn').disabled = false;
+                document.getElementById('stopRecordBtn').disabled = true;
+                addMessage('⏹️ Recording stopped');
+            }
+        });
+
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // End Interview
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        document.getElementById('endCallBtn').addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+
+            document.getElementById('stopBtn').click();
+
+            addMessage('👋 Interview ended. Thank you!');
+            setTimeout(() => {
+                // Optionally redirect back to main page after 2 seconds
+                // window.location.href = '/';
+            }, 2000);
+        });
+
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // Initialize on Page Load
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        window.addEventListener('load', () => {
+            setupRoomInfo();
+            addMessage(`🎤 Room ${config.roomId} initialized. Ready to start!`);
+        });
+
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+        // MediaPipe Drawing Utilities
+        // ════════════════════════════════════════════════════════════════════════════════════════════════
+
+        const HAND_CONNECTIONS = [
+            [0, 1], [1, 2], [2, 3], [3, 4],
+            [0, 5], [5, 6], [6, 7], [7, 8],
+            [5, 9], [9, 10], [10, 11], [11, 12],
+            [9, 13], [13, 14], [14, 15], [15, 16],
+            [13, 17], [17, 18], [18, 19], [19, 20],
+            [0, 17]
+        ];
+
+        function drawConnectors(ctx, landmarks, connections, options) {
+            const color = options.color || '#ccc';
+            const lineWidth = options.lineWidth || 1;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+
+            for (const [start, end] of connections) {
+                const p1 = landmarks[start];
+                const p2 = landmarks[end];
+
+                if (p1 && p2) {
+                    const scale = Math.min(ctx.canvas.width, ctx.canvas.height);
+                    ctx.beginPath();
+                    ctx.moveTo(p1[0] * ctx.canvas.width, p1[1] * ctx.canvas.height);
+                    ctx.lineTo(p2[0] * ctx.canvas.width, p2[1] * ctx.canvas.height);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawLandmarks(ctx, landmarks, options) {
+            const color = options.color || '#ccc';
+            const radius = options.radius || 2;
+
+            ctx.fillStyle = color;
+
+            for (const landmark of landmarks) {
+                if (landmark[0] && landmark[1]) {
+                    ctx.beginPath();
+                    ctx.arc(landmark[0] * ctx.canvas.width, landmark[1] * ctx.canvas.height, radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
