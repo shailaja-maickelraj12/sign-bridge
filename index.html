@@ -247,6 +247,8 @@ select:focus{border-color:var(--blue)}
 .lr-hand-raise-badge.show{display:flex}
 .lr-recording-badge{position:absolute;top:14px;right:14px;background:rgba(239,68,68,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#fff;display:none;align-items:center;gap:5px;z-index:25;animation:blink 1s infinite}
 .lr-recording-badge.show{display:flex}
+.lr-speaker-badge{position:absolute;bottom:100px;left:14px;background:rgba(79,140,255,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#fff;display:none;align-items:center;gap:5px;z-index:25}
+.lr-speaker-badge.show{display:flex}
 
 .lr-muted-badge{position:absolute;bottom:72px;left:16px;background:rgba(239,68,68,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;color:#fff;display:none;align-items:center;gap:5px;z-index:22}
 .lr-muted-badge.show{display:flex}
@@ -692,6 +694,9 @@ select:focus{border-color:var(--blue)}
           <!-- Recording badge -->
           <div class="lr-recording-badge" id="lrRecordingBadge">⏺ Recording</div>
 
+          <!-- Speaker indicator -->
+          <div class="lr-speaker-badge" id="lrSpeakerBadge">🔊 Someone is speaking</div>
+
           <!-- Waiting overlay -->
           <div class="lr-waiting" id="lrWaiting">
             <div class="lr-waiting-ring"></div>
@@ -1068,6 +1073,7 @@ let lrActive=false,lrAutoSpeak=true,lrLangs={en:true,ta:true,hi:false};
 let lrHist=[],lrLastEn='',lrLastTa='',lrIvHist=[];
 let lrTimer=0,lrTimerInt=null,lrCamStarted=false;
 let lrHandRaised=false,lrRecording=false,lrShowParticipants=false,lrShowChat=false,lrShowSettings=false;
+let lrSpeakerTO=null;
 let lrPC=null,lrMicMuted=false,lrVidOff_=false,lrSharing=false;
 let lrLocalStream=null,lrScreenStream=null;
 let lrUserName='',lrPeerName='Peer';
@@ -1107,6 +1113,7 @@ function closeLiveRoom(){
   lrActive=false;lrRoomId=null;lrCamStarted=false;lrHist=[];lrIvHist=[];
   lrMicMuted=false;lrVidOff_=false;lrSharing=false;
   lrHandRaised=false;lrRecording=false;lrShowParticipants=false;lrShowChat=false;lrShowSettings=false;
+  if(lrSpeakerTO){clearTimeout(lrSpeakerTO);lrSpeakerTO=null;}
   speechSynthesis.cancel();
   document.getElementById('lrRoomIdDisplay').style.display='none';
   document.getElementById('lrEnterRoomBtn').style.display='none';
@@ -1442,7 +1449,7 @@ function lrConnectSocket(roomId,role,name){
   });
 
   lrSocket.on('room_joined',()=>{
-    toast('Joined room '+roomId+' as '+role);
+    toast('Joined room '+lrRoomId+' as '+lrRole+' — Press Ctrl+M (mute), Ctrl+V (video), Ctrl+R (record), Ctrl+Y (hand)');
   });
 
   lrSocket.on('peer_joined',d=>{
@@ -1858,6 +1865,51 @@ function lrClear(){
   if(ivEn)ivEn.innerHTML='<span style="color:rgba(255,255,255,0.15);font-weight:300;font-size:16px">Waiting for candidate to sign…</span>';
   const ivTa=document.getElementById('lrIvCurTa');if(ivTa)ivTa.textContent='';
   speechSynthesis.cancel();
+}
+
+// ─── GOOGLE MEET-LIKE ENHANCEMENTS ───
+
+function lrShowSpeaker(name,duration=2500){
+  const badge=document.getElementById('lrSpeakerBadge');
+  if(badge){
+    badge.textContent='🔊 '+name+' is speaking';
+    badge.classList.add('show');
+    clearTimeout(lrSpeakerTO);
+    lrSpeakerTO=setTimeout(()=>badge.classList.remove('show'),duration);
+  }
+}
+
+function lrGetMeetingInfo(){
+  const info={
+    roomId:lrRoomId,
+    role:lrRole,
+    duration:lrTimer,
+    micMuted:lrMicMuted,
+    videOff:lrVidOff_,
+    screensharing:lrSharing,
+    recording:lrRecording,
+    handRaised:lrHandRaised,
+    peer:lrPeerName||'Unknown'
+  };
+  return info;
+}
+
+function lrDisplayMeetingStats(){
+  const info=lrGetMeetingInfo();
+  const m=String(Math.floor(info.duration/60)).padStart(2,'0');
+  const s=String(info.duration%60).padStart(2,'0');
+  const stats=`
+Meeting Stats:
+━━━━━━━━━━━━━
+Room: ${info.roomId}
+Role: ${info.role}
+Duration: ${m}:${s}
+Participants: You + ${info.peer}
+Status: ${info.videOff?'Camera Off':info.micMuted?'Muted':'Active'}
+Sharing: ${info.screensharing?'Yes':'No'}
+Recording: ${info.recording?'Yes':'No'}
+`;
+  console.log(stats);
 }
 
 // ═══════════════════════════════════════════════════════
