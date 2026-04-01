@@ -83,6 +83,13 @@ main{position:relative;z-index:1;display:grid;grid-template-columns:1fr 350px;ga
 .loading-ov{position:absolute;inset:0;background:rgba(6,8,16,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;border-radius:16px;gap:10px}
 .spinner{width:32px;height:32px;border:2px solid var(--surface3);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite}
 .loading-txt{font-size:13px;color:var(--text2)}
+/* KEYBOARD SHORTCUTS HINT */
+.lr-shortcuts-hint{position:fixed;bottom:100px;right:20px;background:rgba(6,8,16,0.95);border:1px solid rgba(79,140,255,0.3);border-radius:12px;padding:16px 20px;font-size:12px;color:var(--text2);max-width:300px;z-index:40;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.lr-shortcuts-hint.show{opacity:1;pointer-events:auto}
+.lr-shortcuts-hint-title{font-weight:600;color:var(--text);margin-bottom:8px;font-size:13px}
+.lr-shortcuts-hint-item{display:flex;gap:8px;margin-bottom:6px;align-items:center}
+.lr-shortcuts-hint-key{background:rgba(79,140,255,0.2);border:1px solid rgba(79,140,255,0.3);border-radius:4px;padding:2px 6px;font-family:var(--mono);font-size:11px;color:var(--blue);flex-shrink:0}
+.lr-shortcuts-hint-desc{color:var(--text2);flex:1}
 
 /* REF GRID */
 .ref-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
@@ -236,6 +243,10 @@ select:focus{border-color:var(--blue)}
 /* Screen share badge */
 .lr-screenshare-badge{position:absolute;top:14px;left:14px;background:rgba(79,140,255,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#fff;display:none;align-items:center;gap:5px;z-index:25}
 .lr-screenshare-badge.show{display:flex}
+.lr-hand-raise-badge{position:absolute;top:14px;left:14px;background:rgba(255,193,7,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#fff;display:none;align-items:center;gap:5px;z-index:25;animation:pulse-ring 2s infinite}
+.lr-hand-raise-badge.show{display:flex}
+.lr-recording-badge{position:absolute;top:14px;right:14px;background:rgba(239,68,68,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#fff;display:none;align-items:center;gap:5px;z-index:25;animation:blink 1s infinite}
+.lr-recording-badge.show{display:flex}
 
 .lr-muted-badge{position:absolute;bottom:72px;left:16px;background:rgba(239,68,68,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;color:#fff;display:none;align-items:center;gap:5px;z-index:22}
 .lr-muted-badge.show{display:flex}
@@ -291,6 +302,8 @@ select:focus{border-color:var(--blue)}
 .lr-mc-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;backdrop-filter:blur(6px);flex-shrink:0}
 .lr-mc-btn:hover{background:rgba(255,255,255,0.2);transform:scale(1.05)}
 .lr-mc-btn.muted,.lr-mc-btn.vid-off{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.5)}
+.lr-mc-btn.hand-raised{background:rgba(255,193,7,0.25);border-color:rgba(255,193,7,0.5);animation:pulse 2s infinite}
+.lr-mc-btn.recording{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.5);animation:blink 1s infinite}
 .lr-mc-btn.sharing{background:rgba(79,140,255,0.3);border-color:rgba(79,140,255,0.6)}
 .lr-mc-btn-label{font-size:9px;color:rgba(255,255,255,0.4);text-align:center;letter-spacing:0.5px}
 .lr-mc-sep{width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 2px}
@@ -673,6 +686,12 @@ select:focus{border-color:var(--blue)}
           <!-- Screen share badge -->
           <div class="lr-screenshare-badge" id="lrShareBadge">🖥 Screen sharing</div>
 
+          <!-- Hand raise badge -->
+          <div class="lr-hand-raise-badge" id="lrHandRaiseBadge">✋ Hand raised</div>
+
+          <!-- Recording badge -->
+          <div class="lr-recording-badge" id="lrRecordingBadge">⏺ Recording</div>
+
           <!-- Waiting overlay -->
           <div class="lr-waiting" id="lrWaiting">
             <div class="lr-waiting-ring"></div>
@@ -737,6 +756,27 @@ select:focus{border-color:var(--blue)}
             <div class="lr-mc-group">
               <button class="lr-mc-btn" onclick="lrSpeakAgain()" title="Repeat last phrase">🔁</button>
               <div class="lr-mc-btn-label">Repeat</div>
+            </div>
+            <div class="lr-mc-sep"></div>
+            <div class="lr-mc-group">
+              <button class="lr-mc-btn" id="lrHandRaiseBtn" onclick="lrToggleHandRaise()" title="Raise hand">✋</button>
+              <div class="lr-mc-btn-label" id="lrHandRaiseLabel">Hand</div>
+            </div>
+            <div class="lr-mc-group">
+              <button class="lr-mc-btn" id="lrRecordBtn" onclick="lrToggleRecording()" title="Record session">⏺</button>
+              <div class="lr-mc-btn-label" id="lrRecordLabel">Record</div>
+            </div>
+            <div class="lr-mc-group">
+              <button class="lr-mc-btn" id="lrParticipantsBtn" onclick="lrToggleParticipants()" title="Show participants">👥</button>
+              <div class="lr-mc-btn-label" id="lrParticipantsLabel">People</div>
+            </div>
+            <div class="lr-mc-group">
+              <button class="lr-mc-btn" id="lrChatBtn" onclick="lrToggleChat()" title="Show messages">💬</button>
+              <div class="lr-mc-btn-label" id="lrChatLabel">Chat</div>
+            </div>
+            <div class="lr-mc-group">
+              <button class="lr-mc-btn" id="lrSettingsBtn" onclick="lrToggleSettings()" title="Settings">⚙️</button>
+              <div class="lr-mc-btn-label" id="lrSettingsLabel">More</div>
             </div>
             <div class="lr-mc-sep"></div>
             <div class="lr-mc-group">
@@ -1007,7 +1047,17 @@ function setLang(l){['ISL','ASL','Tamil'].forEach(x=>document.getElementById('pi
 function toggleLang(l){outLangs[l]=!outLangs[l];document.getElementById('lo-'+l).classList.toggle('on',outLangs[l]);const act=Object.entries(outLangs).filter(([,v])=>v).map(([k])=>k.toUpperCase());document.getElementById('langTag').textContent=act.join(' + ')||'None';}
 function openIV(){ivOpen=true;document.getElementById('ivWrap').classList.add('open');}
 function closeIV(){ivOpen=false;document.getElementById('ivWrap').classList.remove('open');}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeIV();closeLiveRoom();closeScenarioTrain();}});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeIV();closeLiveRoom();closeScenarioTrain();}
+  if(!lrActive)return;
+  if(e.ctrlKey||e.metaKey){
+    if(e.key==='m'||e.key==='M'){e.preventDefault();lrToggleMute();}
+    if(e.key==='v'||e.key==='V'){e.preventDefault();lrToggleVideo();}
+    if(e.key==='s'||e.key==='S'){e.preventDefault();lrToggleScreenShare();}
+    if(e.key==='r'||e.key==='R'){e.preventDefault();lrToggleRecording();}
+    if(e.key==='y'||e.key==='Y'){e.preventDefault();lrToggleHandRaise();}
+  }
+});
 
 // ═══════════════════════════════════════════════════════
 //  LIVE ROOM — Full Two-Way Communication with WebRTC
@@ -1017,6 +1067,7 @@ let lrSocket=null,lrRoomId=null,lrRole='candidate',lrJoinRole_='candidate';
 let lrActive=false,lrAutoSpeak=true,lrLangs={en:true,ta:true,hi:false};
 let lrHist=[],lrLastEn='',lrLastTa='',lrIvHist=[];
 let lrTimer=0,lrTimerInt=null,lrCamStarted=false;
+let lrHandRaised=false,lrRecording=false,lrShowParticipants=false,lrShowChat=false,lrShowSettings=false;
 let lrPC=null,lrMicMuted=false,lrVidOff_=false,lrSharing=false;
 let lrLocalStream=null,lrScreenStream=null;
 let lrUserName='',lrPeerName='Peer';
@@ -1055,6 +1106,7 @@ function closeLiveRoom(){
   });
   lrActive=false;lrRoomId=null;lrCamStarted=false;lrHist=[];lrIvHist=[];
   lrMicMuted=false;lrVidOff_=false;lrSharing=false;
+  lrHandRaised=false;lrRecording=false;lrShowParticipants=false;lrShowChat=false;lrShowSettings=false;
   speechSynthesis.cancel();
   document.getElementById('lrRoomIdDisplay').style.display='none';
   document.getElementById('lrEnterRoomBtn').style.display='none';
@@ -1270,8 +1322,15 @@ function lrStartSession(roomId,role,name){
   }
 
   lrMicMuted=false;lrVidOff_=false;lrSharing=false;
+  lrHandRaised=false;lrRecording=false;lrShowParticipants=false;lrShowChat=false;lrShowSettings=false;
   document.getElementById('lrMuteBtn').textContent='🎙';document.getElementById('lrMuteBtn').classList.remove('muted');
   document.getElementById('lrMuteLabel').textContent='Mute';
+  document.getElementById('lrHandRaiseBtn').textContent='✋';document.getElementById('lrHandRaiseBtn').classList.remove('hand-raised');
+  document.getElementById('lrHandRaiseLabel').textContent='Hand';
+  document.getElementById('lrRecordBtn').textContent='⏺';document.getElementById('lrRecordBtn').classList.remove('recording');
+  document.getElementById('lrRecordLabel').textContent='Record';
+  document.getElementById('lrHandRaiseBadge').classList.remove('show');
+  document.getElementById('lrRecordingBadge').classList.remove('show');
   document.getElementById('lrVidBtn').textContent='📷';document.getElementById('lrVidBtn').classList.remove('vid-off');
   document.getElementById('lrVidLabel').textContent='Video';
   document.getElementById('lrShareBtn').textContent='🖥';document.getElementById('lrShareBtn').classList.remove('sharing');
@@ -1454,6 +1513,15 @@ function lrConnectSocket(roomId,role,name){
         speechSynthesis.speak(u);
         toast('Interviewer is speaking…');
       }else{toast('Interviewer: '+d.text);}
+    }
+  });
+
+  // Hand raise indicator
+  lrSocket.on('hand_raised',d=>{
+    if(d.raised){
+      toast(d.name+' raised their hand ✋');
+    }else{
+      toast(d.name+' lowered their hand');
     }
   });
 }
@@ -1714,6 +1782,69 @@ function lrSpeak(en,ta,onDone){
   if(!utts.length){if(onDone)onDone();return;}
   utts[utts.length-1].onend=()=>{if(onDone)onDone();};
   utts.forEach(u=>speechSynthesis.speak(u));
+}
+
+function lrCopyWaitingCode(){if(lrRoomId)navigator.clipboard.writeText(lrRoomId).then(()=>toast('Room ID copied: '+lrRoomId));}
+
+// ─── NEW GOOGLE MEET-LIKE FEATURES ───
+
+function lrToggleHandRaise(){
+  lrHandRaised=!lrHandRaised;
+  const btn=document.getElementById('lrHandRaiseBtn'),lbl=document.getElementById('lrHandRaiseLabel'),badge=document.getElementById('lrHandRaiseBadge');
+  if(lrHandRaised){
+    btn.classList.add('hand-raised');lbl.textContent='Lower';badge.classList.add('show');
+    if(lrSocket&&lrRoomId)lrSocket.emit('hand_raised',{room_id:lrRoomId,name:lrUserName,raised:true});
+    toast('Hand raised!');
+  }else{
+    btn.classList.remove('hand-raised');lbl.textContent='Hand';badge.classList.remove('show');
+    if(lrSocket&&lrRoomId)lrSocket.emit('hand_raised',{room_id:lrRoomId,name:lrUserName,raised:false});
+    toast('Hand lowered');
+  }
+}
+
+function lrToggleRecording(){
+  lrRecording=!lrRecording;
+  const btn=document.getElementById('lrRecordBtn'),lbl=document.getElementById('lrRecordLabel'),badge=document.getElementById('lrRecordingBadge');
+  if(lrRecording){
+    btn.classList.add('recording');lbl.textContent='Stop';badge.classList.add('show');
+    toast('Recording started');
+  }else{
+    btn.classList.remove('recording');lbl.textContent='Record';badge.classList.remove('show');
+    toast('Recording stopped');
+  }
+}
+
+function lrToggleParticipants(){
+  lrShowParticipants=!lrShowParticipants;
+  const btn=document.getElementById('lrParticipantsBtn');
+  if(lrShowParticipants){
+    btn.style.background='rgba(79,140,255,0.25)';btn.style.borderColor='rgba(79,140,255,0.5)';
+    toast('Participants: You + '+( lrPeerName||'peer'));
+  }else{
+    btn.style.background='';btn.style.borderColor='';
+  }
+}
+
+function lrToggleChat(){
+  lrShowChat=!lrShowChat;
+  const btn=document.getElementById('lrChatBtn');
+  if(lrShowChat){
+    btn.style.background='rgba(79,140,255,0.25)';btn.style.borderColor='rgba(79,140,255,0.5)';
+    toast('Chat panel opened');
+  }else{
+    btn.style.background='';btn.style.borderColor='';
+  }
+}
+
+function lrToggleSettings(){
+  lrShowSettings=!lrShowSettings;
+  const btn=document.getElementById('lrSettingsBtn');
+  if(lrShowSettings){
+    btn.style.background='rgba(79,140,255,0.25)';btn.style.borderColor='rgba(79,140,255,0.5)';
+    toast('Settings opened');
+  }else{
+    btn.style.background='';btn.style.borderColor='';
+  }
 }
 
 function lrCopyWaitingCode(){if(lrRoomId)navigator.clipboard.writeText(lrRoomId).then(()=>toast('Room ID copied: '+lrRoomId));}
