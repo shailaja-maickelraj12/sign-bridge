@@ -191,44 +191,80 @@ select:focus{border-color:var(--blue)}
 
 /* ═══════ SPLIT LAYOUT ═══════ */
 .lr-body{flex:1;display:grid;overflow:hidden;grid-template-columns:1fr 420px}
-.lr-body.interviewer-view{grid-template-columns:1fr 420px}
 
 /* ─── LEFT: Video panel ─── */
 .lr-cam-panel{position:relative;display:flex;flex-direction:column;background:#000;overflow:hidden;border-right:1px solid rgba(167,139,250,0.08)}
 .lr-cam-box{position:relative;flex:1;overflow:hidden;background:#0a0a0f}
 
-/* Local pip video */
-.lr-pip{position:absolute;bottom:66px;right:14px;width:120px;height:90px;border-radius:10px;overflow:hidden;border:2px solid rgba(167,139,250,0.4);z-index:10;background:#111;transition:all 0.2s}
-.lr-pip video{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
-.lr-pip-label{position:absolute;bottom:4px;left:6px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px;text-transform:uppercase;background:rgba(0,0,0,0.5);padding:2px 5px;border-radius:3px}
-
-#lrVid{width:100%;height:100%;object-fit:cover;display:block}
-#lrCvs{position:absolute;inset:0;width:100%;height:100%}
-#lrRemoteVid{width:100%;height:100%;object-fit:cover;display:block}
+/* ─── VIDEO LAYOUT: remote fills main, local is PIP ─── */
+/* Remote peer video — fills the entire camera panel */
+#lrRemoteVid{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  object-fit:cover;display:block;
+  background:#0a0a10;
+}
+/* Local camera PIP (bottom-right corner) */
+.lr-pip{
+  position:absolute;bottom:70px;right:14px;
+  width:130px;height:98px;
+  border-radius:10px;overflow:hidden;
+  border:2px solid rgba(167,139,250,0.5);
+  z-index:20;background:#111;
+  box-shadow:0 4px 20px rgba(0,0,0,0.6);
+  transition:all 0.2s;
+}
+.lr-pip:hover{transform:scale(1.04);border-color:rgba(167,139,250,0.9)}
 #lrLocalVid{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
+.lr-pip-label{
+  position:absolute;bottom:4px;left:6px;
+  font-size:9px;font-weight:700;color:rgba(255,255,255,0.85);
+  letter-spacing:1px;text-transform:uppercase;
+  background:rgba(0,0,0,0.55);padding:2px 5px;border-radius:3px;
+}
+/* Gesture canvas overlaid on PIP (candidate only) — we draw on a separate canvas for the full view */
+#lrCvs{
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  pointer-events:none;
+  z-index:10;
+  display:none;/* shown only for candidate */
+}
+/* Hidden video element fed to MediaPipe for gesture detection */
+#lrVid{display:none;}
 
-.lr-vid-off{position:absolute;inset:0;background:#0f1018;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px}
-.lr-vid-off.show{display:flex}
-.lr-vid-off-avatar{width:72px;height:72px;border-radius:50%;background:var(--purple-dim);border:2px solid rgba(167,139,250,0.3);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--purple);font-weight:700;animation:pulse-ring 2s infinite}
-.lr-vid-off-name{font-size:14px;color:rgba(255,255,255,0.4);font-weight:500}
-
-/* Screen share indicator */
-.lr-screenshare-badge{position:absolute;top:14px;left:14px;background:rgba(79,140,255,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#fff;display:none;align-items:center;gap:5px;z-index:15}
+/* Screen share badge */
+.lr-screenshare-badge{position:absolute;top:14px;left:14px;background:rgba(79,140,255,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;color:#fff;display:none;align-items:center;gap:5px;z-index:25}
 .lr-screenshare-badge.show{display:flex}
 
-.lr-muted-badge{position:absolute;bottom:72px;left:16px;background:rgba(239,68,68,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;color:#fff;display:none;align-items:center;gap:5px;z-index:12}
+.lr-muted-badge{position:absolute;bottom:72px;left:16px;background:rgba(239,68,68,0.85);backdrop-filter:blur(8px);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;color:#fff;display:none;align-items:center;gap:5px;z-index:22}
 .lr-muted-badge.show{display:flex}
-.lr-vid-nametag{position:absolute;bottom:66px;left:14px;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);pointer-events:none;z-index:11}
+
+/* Name tag shown on main video area — who you're seeing */
+.lr-vid-nametag{
+  position:absolute;top:14px;right:14px;
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);
+  border-radius:6px;padding:4px 10px;
+  font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);
+  pointer-events:none;z-index:21;
+}
+/* "Your name" tag on PIP */
+.lr-pip-you-tag{
+  position:absolute;top:4px;right:6px;
+  font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);
+  background:rgba(0,0,0,0.5);padding:2px 5px;border-radius:3px;
+  z-index:21;
+}
 
 /* GESTURE DETECTION OVERLAY (candidate only) */
-.lr-vid-conf{position:absolute;bottom:52px;left:0;right:0;padding:0 14px;pointer-events:none;display:none}
+.lr-vid-conf{position:absolute;bottom:66px;left:0;right:0;padding:0 14px;pointer-events:none;display:none;z-index:22}
 .lr-vid-conf.show{display:block}
 .lr-conf-bar{height:3px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden}
 .lr-conf-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--purple),#c4b5fd);width:0%;transition:width 0.18s}
 .lr-conf-lbl{font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:4px;font-family:var(--mono);text-align:right}
 
 /* WAITING OVERLAY */
-.lr-waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;background:rgba(8,9,15,0.96);z-index:5}
+.lr-waiting{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;background:rgba(8,9,15,0.96);z-index:30}
 .lr-waiting.hidden{display:none}
 .lr-waiting-ring{width:60px;height:60px;border-radius:50%;border:2px solid rgba(167,139,250,0.15);border-top-color:var(--purple);animation:spin 1.2s linear infinite}
 .lr-room-code{font-size:34px;font-weight:800;color:var(--purple);letter-spacing:6px;font-family:var(--mono)}
@@ -236,13 +272,26 @@ select:focus{border-color:var(--blue)}
 .lr-waiting-copy{padding:7px 18px;background:var(--purple-dim);border:1px solid rgba(167,139,250,0.3);border-radius:8px;color:var(--purple);font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s}
 .lr-waiting-copy:hover{background:rgba(167,139,250,0.2)}
 
+/* Camera off overlay (when peer turns off camera) */
+.lr-vid-off{position:absolute;inset:0;background:#0f1018;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:15}
+.lr-vid-off.show{display:flex}
+.lr-vid-off-avatar{width:72px;height:72px;border-radius:50%;background:var(--purple-dim);border:2px solid rgba(167,139,250,0.3);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--purple);font-weight:700;animation:pulse-ring 2s infinite}
+.lr-vid-off-name{font-size:14px;color:rgba(255,255,255,0.4);font-weight:500}
+
+/* Loading overlay */
+.lr-cam-ld{position:absolute;inset:0;background:rgba(8,9,15,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:35;gap:10px}
+.lr-cam-status-ov{position:absolute;top:50px;left:14px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);border-radius:20px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,0.6);z-index:21}
+.lr-cdot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background 0.3s}
+.lr-cdot.ready{background:var(--green);animation:blink 2s infinite}
+.lr-cdot.detect{background:var(--cyan);animation:blink 0.6s infinite}
+
 /* MEDIA BAR (bottom of video) */
-.lr-media-bar{position:absolute;bottom:0;left:0;right:0;height:58px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(to top,rgba(0,0,0,0.9) 0%,transparent 100%);padding:0 16px;z-index:10}
+.lr-media-bar{position:absolute;bottom:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(to top,rgba(0,0,0,0.92) 0%,transparent 100%);padding:0 16px;z-index:22}
 .lr-mc-group{display:flex;flex-direction:column;align-items:center;gap:2px}
-.lr-mc-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;backdrop-filter:blur(6px);flex-shrink:0;position:relative}
+.lr-mc-btn{width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;backdrop-filter:blur(6px);flex-shrink:0}
 .lr-mc-btn:hover{background:rgba(255,255,255,0.2);transform:scale(1.05)}
-.lr-mc-btn.muted,.lr-mc-btn.vid-off,.lr-mc-btn.sharing{background:rgba(79,140,255,0.3);border-color:rgba(79,140,255,0.6)}
 .lr-mc-btn.muted,.lr-mc-btn.vid-off{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.5)}
+.lr-mc-btn.sharing{background:rgba(79,140,255,0.3);border-color:rgba(79,140,255,0.6)}
 .lr-mc-btn-label{font-size:9px;color:rgba(255,255,255,0.4);text-align:center;letter-spacing:0.5px}
 .lr-mc-sep{width:1px;height:24px;background:rgba(255,255,255,0.1);margin:0 2px}
 .lr-mc-btn.end-call{background:rgba(239,68,68,0.7);border-color:rgba(239,68,68,0.9);width:44px;height:44px}
@@ -290,11 +339,6 @@ select:focus{border-color:var(--blue)}
 
 /* INTERVIEWER VIEW: right panel */
 .lr-iv-panel{display:flex;flex-direction:column;overflow:hidden;background:#0b0c14}
-.lr-iv-panel.hidden{display:none}
-.lr-iv-header{padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
-.lr-iv-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.25)}
-
-/* Candidate sign display for interviewer */
 .lr-iv-sign-card{padding:20px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
 .lr-iv-sign-label{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(167,139,250,0.5);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .lr-iv-sign-pulse{width:8px;height:8px;border-radius:50%;background:var(--purple);position:relative}
@@ -344,12 +388,20 @@ select:focus{border-color:var(--blue)}
 .lr-clear-btn{padding:5px 10px;background:transparent;border:1px solid rgba(255,255,255,0.08);border-radius:7px;color:rgba(255,255,255,0.35);font-family:'Outfit',sans-serif;font-size:11px;cursor:pointer}
 .lr-clear-btn:hover{border-color:rgba(239,68,68,0.4);color:#f87171}
 
-/* LOADING OV */
-.lr-cam-ld{position:absolute;inset:0;background:rgba(8,9,15,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;gap:10px;border-radius:0}
-.lr-cam-status-ov{position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);border-radius:20px;padding:4px 10px;font-size:11px;color:rgba(255,255,255,0.6);z-index:11}
-.lr-cdot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background 0.3s}
-.lr-cdot.ready{background:var(--green);animation:blink 2s infinite}
-.lr-cdot.detect{background:var(--cyan);animation:blink 0.6s infinite}
+/* Audio indicator badge */
+.lr-audio-badge{
+  position:absolute;top:50px;right:14px;
+  display:flex;align-items:center;gap:5px;
+  background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);
+  border-radius:20px;padding:4px 10px;
+  font-size:10px;color:rgba(255,255,255,0.5);
+  z-index:21;transition:all 0.3s;
+}
+.lr-audio-badge.active{color:#4ade80;border:1px solid rgba(74,222,128,0.2)}
+.lr-audio-bars{display:flex;gap:2px;align-items:flex-end;height:10px}
+.lr-audio-bar{width:2px;background:#4ade80;border-radius:1px;animation:bar-anim 0.6s infinite}
+.lr-audio-bar:nth-child(2){animation-delay:0.12s}
+.lr-audio-bar:nth-child(3){animation-delay:0.24s}
 
 /* SCENARIO TRAINING */
 .st-wrap{position:fixed;inset:0;z-index:200;background:rgba(6,8,16,0.97);backdrop-filter:blur(20px);display:flex;flex-direction:column;transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);overflow:hidden}
@@ -602,16 +654,18 @@ select:focus{border-color:var(--blue)}
 
       <!-- ─── LEFT: VIDEO PANEL ─── -->
       <div class="lr-cam-panel">
-        <div class="lr-cam-box" style="flex:1;border-radius:0">
+        <div class="lr-cam-box" style="flex:1;border-radius:0;position:relative;height:100%;">
 
-          <!-- Main video (remote for candidate, local for interviewer when screening) -->
-          <video id="lrRemoteVid" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>
-          <!-- Gesture canvas (candidate only, overlaid on remote feed or local) -->
-          <canvas id="lrCvs" style="position:absolute;inset:0;width:100%;height:100%;display:none"></canvas>
-          <!-- Local gesture video (hidden, fed to MediaPipe) -->
-          <video id="lrVid" autoplay playsinline muted style="display:none"></video>
+          <!-- REMOTE peer video — fills main area -->
+          <video id="lrRemoteVid" autoplay playsinline></video>
 
-          <!-- PIP (local camera preview, small) -->
+          <!-- Canvas for gesture skeleton overlay (candidate only) -->
+          <canvas id="lrCvs"></canvas>
+
+          <!-- Hidden video fed to MediaPipe for gesture detection -->
+          <video id="lrVid" autoplay playsinline muted></video>
+
+          <!-- LOCAL camera PIP (bottom-right) -->
           <div class="lr-pip" id="lrPip">
             <video id="lrLocalVid" autoplay playsinline muted></video>
             <div class="lr-pip-label" id="lrPipLabel">You</div>
@@ -628,13 +682,13 @@ select:focus{border-color:var(--blue)}
             <button class="lr-waiting-copy" onclick="lrCopyWaitingCode()">📋 Copy Room ID</button>
           </div>
 
-          <!-- Camera off overlay -->
+          <!-- Peer camera-off overlay -->
           <div class="lr-vid-off" id="lrVidOff">
             <div class="lr-vid-off-avatar" id="lrVidOffAvatar">?</div>
-            <div class="lr-vid-off-name" id="lrVidOffName">Camera off</div>
+            <div class="lr-vid-off-name" id="lrVidOffName">Peer camera off</div>
           </div>
 
-          <!-- Loading -->
+          <!-- Camera loading -->
           <div class="lr-cam-ld" id="lrCamLd">
             <div class="spinner"></div>
             <div class="loading-txt" id="lrCamTxt">Starting camera...</div>
@@ -645,10 +699,18 @@ select:focus{border-color:var(--blue)}
             <span class="lr-cdot" id="lrCDot"></span>
             <span id="lrCamStatusTxt">Camera active</span>
           </div>
-          <div class="lr-muted-badge" id="lrMutedBadge">🎙 Muted</div>
-          <div class="lr-vid-nametag" id="lrVidNametag">You</div>
 
-          <!-- Gesture confidence (candidate) -->
+          <!-- Audio active indicator -->
+          <div class="lr-audio-badge" id="lrAudioBadge">
+            🎙 Mic on
+          </div>
+
+          <div class="lr-muted-badge" id="lrMutedBadge">🔇 Muted</div>
+
+          <!-- Who you're seeing tag -->
+          <div class="lr-vid-nametag" id="lrVidNametag">Peer</div>
+
+          <!-- Gesture confidence (candidate only) -->
           <div class="lr-vid-conf" id="lrConfRow">
             <div class="lr-conf-lbl" id="lrConfPct">0%</div>
             <div class="lr-conf-bar"><div class="lr-conf-fill" id="lrConfFill"></div></div>
@@ -656,34 +718,28 @@ select:focus{border-color:var(--blue)}
 
           <!-- MEDIA CONTROLS BAR -->
           <div class="lr-media-bar">
-            <!-- Mute -->
             <div class="lr-mc-group">
               <button class="lr-mc-btn" id="lrMuteBtn" onclick="lrToggleMute()" title="Toggle microphone">🎙</button>
               <div class="lr-mc-btn-label" id="lrMuteLabel">Mute</div>
             </div>
-            <!-- Video -->
             <div class="lr-mc-group">
               <button class="lr-mc-btn" id="lrVidBtn" onclick="lrToggleVideo()" title="Toggle camera">📷</button>
               <div class="lr-mc-btn-label" id="lrVidLabel">Video</div>
             </div>
-            <!-- Screen Share -->
             <div class="lr-mc-group">
               <button class="lr-mc-btn" id="lrShareBtn" onclick="lrToggleScreenShare()" title="Share screen">🖥</button>
               <div class="lr-mc-btn-label" id="lrShareLabel">Share</div>
             </div>
             <div class="lr-mc-sep"></div>
-            <!-- Auto speak -->
             <div class="lr-mc-group">
               <button class="lr-mc-btn" id="lrSpeakTogBtn" onclick="lrTogSpeech()" title="Toggle auto-speak">🔊</button>
               <div class="lr-mc-btn-label" id="lrSpeakTogLabel">Auto</div>
             </div>
-            <!-- Repeat last -->
             <div class="lr-mc-group">
               <button class="lr-mc-btn" onclick="lrSpeakAgain()" title="Repeat last phrase">🔁</button>
               <div class="lr-mc-btn-label">Repeat</div>
             </div>
             <div class="lr-mc-sep"></div>
-            <!-- End call -->
             <div class="lr-mc-group">
               <button class="lr-mc-btn end-call" onclick="closeLiveRoom()" title="End session">📵</button>
               <div class="lr-mc-btn-label" style="color:#f87171;">Leave</div>
@@ -694,13 +750,12 @@ select:focus{border-color:var(--blue)}
 
       <!-- ─── RIGHT PANEL (injected by role) ─── -->
       <div id="lrRightContainer" style="display:flex;flex-direction:column;overflow:hidden;background:#0b0c14">
-        <!-- Filled dynamically by lrBuildCandidatePanel() or lrBuildInterviewerPanel() -->
       </div>
     </div>
   </div>
 </div>
 
-<!-- SCENARIO TRAINING (unchanged structure) -->
+<!-- SCENARIO TRAINING -->
 <div class="st-wrap" id="stWrap">
   <div class="st-header">
     <div class="st-logo">Sign<span>Bridge</span> — 🎯 Scenario Training</div>
@@ -956,7 +1011,8 @@ function closeIV(){ivOpen=false;document.getElementById('ivWrap').classList.remo
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeIV();closeLiveRoom();closeScenarioTrain();}});
 
 // ═══════════════════════════════════════════════════════
-//  LIVE ROOM — Full Two-Way Communication
+//  LIVE ROOM — Full Two-Way Communication with WebRTC
+//  Video + Audio bidirectional streaming
 // ═══════════════════════════════════════════════════════
 let lrSocket=null,lrRoomId=null,lrRole='candidate',lrJoinRole_='candidate';
 let lrActive=false,lrAutoSpeak=true,lrLangs={en:true,ta:true,hi:false};
@@ -964,8 +1020,12 @@ let lrHist=[],lrLastEn='',lrLastTa='',lrIvHist=[];
 let lrTimer=0,lrTimerInt=null,lrCamStarted=false;
 let lrPC=null,lrMicMuted=false,lrVidOff_=false,lrSharing=false;
 let lrLocalStream=null,lrScreenStream=null;
-let lrIvSpeaking=false;
-let lrUserName='';
+let lrUserName='',lrPeerName='Peer';
+
+const ICE_SERVERS={iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+]};
 
 const LR_QUICK_REPLIES=[
   'Please take your time.',
@@ -990,6 +1050,10 @@ function closeLiveRoom(){
   if(lrPC){lrPC.close();lrPC=null;}
   if(lrLocalStream){lrLocalStream.getTracks().forEach(t=>t.stop());lrLocalStream=null;}
   if(lrScreenStream){lrScreenStream.getTracks().forEach(t=>t.stop());lrScreenStream=null;}
+  // Clear video elements
+  ['lrRemoteVid','lrLocalVid','lrVid'].forEach(id=>{
+    const v=document.getElementById(id);if(v&&v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}
+  });
   lrActive=false;lrRoomId=null;lrCamStarted=false;lrHist=[];lrIvHist=[];
   lrMicMuted=false;lrVidOff_=false;lrSharing=false;
   speechSynthesis.cancel();
@@ -1048,7 +1112,6 @@ function lrBuildCandidatePanel(){
   const c=document.getElementById('lrRightContainer');
   c.innerHTML=`
     <div class="lr-display" id="lrDisplay">
-      <!-- Current sign output -->
       <div class="lr-current-card">
         <div class="lr-speak-ind" id="lrSpeakInd">
           <div class="lr-bars"><div class="lr-bar"></div><div class="lr-bar"></div><div class="lr-bar"></div></div>
@@ -1058,7 +1121,6 @@ function lrBuildCandidatePanel(){
         <div class="lr-cur-en" id="lrCurEn"><span style="color:rgba(255,255,255,0.18);font-weight:300;font-size:14px">Sign a gesture to begin…</span></div>
         <div class="lr-cur-ta" id="lrCurTa"></div>
       </div>
-      <!-- Interviewer incoming -->
       <div class="lr-interviewer-incoming" id="lrIICard" style="display:none">
         <div class="lr-ii-label">
           👔 Interviewer says
@@ -1091,7 +1153,6 @@ function lrBuildCandidatePanel(){
 function lrBuildInterviewerPanel(){
   const c=document.getElementById('lrRightContainer');
   c.innerHTML=`
-    <!-- CANDIDATE SIGN DISPLAY -->
     <div class="lr-iv-sign-card">
       <div class="lr-iv-sign-label">
         <div class="lr-iv-sign-pulse"></div>
@@ -1104,21 +1165,13 @@ function lrBuildInterviewerPanel(){
         Auto-playing…
       </div>
     </div>
-
-    <!-- INTERVIEWER SPEAK BACK -->
     <div class="lr-iv-speak-section">
-      <div class="lr-iv-speak-title">
-        🎙 Speak to Candidate
-      </div>
+      <div class="lr-iv-speak-title">🎙 Speak to Candidate</div>
       <div class="lr-iv-speak-area">
         <textarea class="lr-iv-speak-input" id="lrIvSpeakInput" placeholder="Type a message or choose a quick reply below…" rows="3"></textarea>
         <div class="lr-iv-speak-actions">
-          <button class="lr-iv-speak-btn" id="lrIvSpeakBtn" onclick="lrIvSpeak()">
-            🔊 Speak Aloud
-          </button>
-          <button class="lr-iv-speak-btn" style="background:rgba(167,139,250,0.2);border:1px solid rgba(167,139,250,0.4);" onclick="lrIvSendText()">
-            📤 Send Text
-          </button>
+          <button class="lr-iv-speak-btn" id="lrIvSpeakBtn" onclick="lrIvSpeak()">🔊 Speak Aloud</button>
+          <button class="lr-iv-speak-btn" style="background:rgba(167,139,250,0.2);border:1px solid rgba(167,139,250,0.4);" onclick="lrIvSendText()">📤 Send Text</button>
         </div>
         <div class="lr-iv-quick-replies">
           <div class="lr-iv-quick-label">Quick replies</div>
@@ -1126,14 +1179,10 @@ function lrBuildInterviewerPanel(){
         </div>
       </div>
     </div>
-
-    <!-- CONVERSATION HISTORY -->
     <div class="lr-iv-hist" id="lrIvHistArea">
       <div class="lr-iv-hist-title">Conversation</div>
       <div id="lrIvHistList"><div class="lr-iv-hist-empty">Messages appear here…</div></div>
     </div>
-
-    <!-- CONTROLS -->
     <div class="lr-controls">
       <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
         <span style="font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:1px;">CANDIDATE LANG</span>
@@ -1146,7 +1195,6 @@ function lrBuildInterviewerPanel(){
       </div>
     </div>`;
 
-  // Populate quick replies
   const grid=document.getElementById('lrIvQrGrid');
   LR_QUICK_REPLIES.forEach(t=>{
     const btn=document.createElement('button');btn.className='lr-iv-qr';btn.textContent=t;
@@ -1154,57 +1202,37 @@ function lrBuildInterviewerPanel(){
     grid.appendChild(btn);
   });
 
-  // Enter key to send
   document.getElementById('lrIvSpeakInput').addEventListener('keydown',e=>{
     if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();lrIvSpeak();}
   });
 }
 
 // ─── INTERVIEWER: SPEAK BACK ───
-
 function lrIvSpeak(){
-  const input=document.getElementById('lrIvSpeakInput');
-  if(!input)return;
-  const text=input.value.trim();
-  if(!text){toast('Type something to say');return;}
-
-  // Speak via Web Speech
+  const input=document.getElementById('lrIvSpeakInput');if(!input)return;
+  const text=input.value.trim();if(!text){toast('Type something to say');return;}
   speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang='en-IN';u.rate=0.95;u.volume=1;
+  const u=new SpeechSynthesisUtterance(text);u.lang='en-IN';u.rate=0.95;u.volume=1;
   const btn=document.getElementById('lrIvSpeakBtn');
   if(btn){btn.classList.add('speaking');btn.textContent='🔊 Speaking…';}
   u.onend=()=>{if(btn){btn.classList.remove('speaking');btn.textContent='🔊 Speak Aloud';}};
   speechSynthesis.speak(u);
-
-  // Broadcast to room so candidate hears it too (socket)
-  if(lrSocket&&lrRoomId){
-    lrSocket.emit('interviewer_speech',{room_id:lrRoomId,text,name:lrUserName||'Interviewer'});
-  }
-
-  // Log to history
+  if(lrSocket&&lrRoomId)lrSocket.emit('interviewer_speech',{room_id:lrRoomId,text,name:lrUserName||'Interviewer'});
   lrIvAddMsg('interviewer',lrUserName||'Interviewer',text);
-  input.value='';
-  toast('Speaking to candidate…');
+  input.value='';toast('Speaking to candidate…');
 }
 
 function lrIvSendText(){
-  const input=document.getElementById('lrIvSpeakInput');
-  if(!input)return;
-  const text=input.value.trim();
-  if(!text){toast('Type a message');return;}
-  if(lrSocket&&lrRoomId){
-    lrSocket.emit('interviewer_speech',{room_id:lrRoomId,text,name:lrUserName||'Interviewer',textOnly:true});
-  }
+  const input=document.getElementById('lrIvSpeakInput');if(!input)return;
+  const text=input.value.trim();if(!text){toast('Type a message');return;}
+  if(lrSocket&&lrRoomId)lrSocket.emit('interviewer_speech',{room_id:lrRoomId,text,name:lrUserName||'Interviewer',textOnly:true});
   lrIvAddMsg('interviewer',lrUserName||'Interviewer',text);
-  input.value='';
-  toast('Message sent to candidate');
+  input.value='';toast('Message sent to candidate');
 }
 
 function lrIvAddMsg(who,name,text){
   lrIvHist.push({who,name,text});
-  const list=document.getElementById('lrIvHistList');
-  if(!list)return;
+  const list=document.getElementById('lrIvHistList');if(!list)return;
   list.innerHTML='';
   lrIvHist.forEach(m=>{
     const el=document.createElement('div');el.className='lr-iv-msg '+m.who;
@@ -1212,41 +1240,36 @@ function lrIvAddMsg(who,name,text){
     list.appendChild(el);
   });
   list.scrollTop=list.scrollHeight;
-  const hist=document.getElementById('lrIvHistArea');
-  if(hist)hist.scrollTop=hist.scrollHeight;
+  const ha=document.getElementById('lrIvHistArea');if(ha)ha.scrollTop=ha.scrollHeight;
 }
 
 // ─── SESSION START ───
-
 function lrStartSession(roomId,role,name){
   lrActive=true;lrUserName=name;
   document.getElementById('lrSetup').style.display='none';
   document.getElementById('lrMain').style.display='flex';
 
-  // Build role panel
   if(role==='interviewer')lrBuildInterviewerPanel();
   else lrBuildCandidatePanel();
 
   document.getElementById('lrRoomChip').textContent='Room '+roomId;
   document.getElementById('lrRoleChip').textContent=role==='candidate'?'🤟 Candidate':'👔 Interviewer';
   document.getElementById('lrWaitingCode').textContent=roomId;
-  document.getElementById('lrVidNametag').textContent=name;
-  document.getElementById('lrVidOffAvatar').textContent=(name[0]||'Y').toUpperCase();
-  document.getElementById('lrVidOffName').textContent=name;
+  // The nametag shows who you're LOOKING AT (remote peer) — set after peer joins
+  document.getElementById('lrVidNametag').textContent='Waiting for peer…';
+  document.getElementById('lrVidOffAvatar').textContent='?';
+  document.getElementById('lrVidOffName').textContent='Peer camera off';
   document.getElementById('lrPeerChip').textContent='Waiting for peer...';
   document.getElementById('lrPeerChip').className='lr-peer-chip';
   document.getElementById('lrPipLabel').textContent=name.split(' ')[0]||'You';
 
-  // Candidate: show gesture conf; Interviewer: hide
+  // Candidate shows gesture confidence bar; interviewer hides it
   if(role==='candidate'){
     document.getElementById('lrConfRow').classList.add('show');
-    document.getElementById('lrCamStatusRow').style.display='flex';
   }else{
     document.getElementById('lrConfRow').classList.remove('show');
-    document.getElementById('lrCamStatusRow').style.display='flex';
   }
 
-  // Reset media buttons
   lrMicMuted=false;lrVidOff_=false;lrSharing=false;
   document.getElementById('lrMuteBtn').textContent='🎙';document.getElementById('lrMuteBtn').classList.remove('muted');
   document.getElementById('lrMuteLabel').textContent='Mute';
@@ -1266,65 +1289,130 @@ function lrStartSession(roomId,role,name){
     document.getElementById('lrTimer').textContent=m+':'+s;
   },1000);
 
-  // Camera
-  lrInitCamera(role);
+  // Start camera first, then connect socket
+  lrInitCamera(role).then(()=>{
+    lrConnectSocket(roomId,role,name);
+  });
+}
 
-  // Socket
-  lrSocket=io(WS_URL);
-  lrSocket.emit('join_room',{room_id:roomId,role,name});
+// ─── CAMERA INIT ───
+// Acquires local video+audio stream, shows local pip, and sets up
+// gesture detection (candidate only). Remote video is populated by WebRTC.
+async function lrInitCamera(role){
+  const ld=document.getElementById('lrCamLd');ld.style.display='flex';
+  document.getElementById('lrCamTxt').textContent='Requesting camera & microphone…';
+  try{
+    // Request video + audio for both roles
+    const stream=await navigator.mediaDevices.getUserMedia({
+      video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'},
+      audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100}
+    });
+    lrLocalStream=stream;
 
-  lrSocket.on('room_joined',()=>{toast('Joined room '+roomId+' as '+role);});
+    // Show local stream in the PIP (mirrored)
+    const localVid=document.getElementById('lrLocalVid');
+    localVid.srcObject=stream;
+    await localVid.play().catch(()=>{});
+
+    // For candidate: also feed local video to MediaPipe (hidden video element)
+    if(role==='candidate'){
+      const gestVid=document.getElementById('lrVid');
+      // Use a clone of the video track so MediaPipe gets frames independently
+      const videoTrack=stream.getVideoTracks()[0];
+      const gestStream=new MediaStream([videoTrack]);
+      gestVid.srcObject=gestStream;
+      await new Promise(res=>{gestVid.onloadedmetadata=()=>res();gestVid.onerror=()=>res();});
+      await gestVid.play().catch(()=>{});
+
+      // Show gesture canvas overlay
+      const cvs=document.getElementById('lrCvs');
+      cvs.style.display='block';
+
+      // Load MediaPipe
+      document.getElementById('lrCamTxt').textContent='Loading gesture model…';
+      const mp=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+      mp.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.72,minTrackingConfidence:0.65});
+      mp.onResults(lrOnResults);
+      const cam=new Camera(gestVid,{
+        onFrame:async()=>{if(lrActive&&lrRole==='candidate')await mp.send({image:gestVid});},
+        width:640,height:480
+      });
+      await cam.start();
+      document.getElementById('lrCDot').className='lr-cdot ready';
+      document.getElementById('lrCamStatusTxt').textContent='Gesture detection active';
+    }else{
+      // Interviewer: no gesture detection needed
+      document.getElementById('lrCvs').style.display='none';
+      document.getElementById('lrCDot').className='lr-cdot ready';
+      document.getElementById('lrCamStatusTxt').textContent='Camera & mic active';
+    }
+
+    // Audio badge
+    const ab=document.getElementById('lrAudioBadge');
+    ab.classList.add('active');
+    ab.innerHTML=`<div class="lr-audio-bars"><div class="lr-audio-bar"></div><div class="lr-audio-bar"></div><div class="lr-audio-bar"></div></div> Mic on`;
+
+    ld.style.display='none';
+    lrCamStarted=true;
+    toast('Camera & microphone ready');
+  }catch(e){
+    ld.style.display='none';
+    document.getElementById('lrCamStatusTxt').textContent='⚠ '+e.message;
+    // Try video only if audio fails
+    try{
+      const vs=await navigator.mediaDevices.getUserMedia({video:true});
+      lrLocalStream=vs;
+      document.getElementById('lrLocalVid').srcObject=vs;
+      if(role==='candidate'){
+        document.getElementById('lrVid').srcObject=new MediaStream([vs.getVideoTracks()[0]]);
+        document.getElementById('lrCvs').style.display='block';
+      }
+      lrCamStarted=true;
+      toast('Camera only (no microphone): '+e.message);
+    }catch(e2){
+      toast('Camera error: '+e2.message);
+    }
+  }
+}
+
+// ─── SOCKET CONNECTION ───
+function lrConnectSocket(roomId,role,name){
+  lrSocket=io(WS_URL,{transports:['websocket','polling']});
+
+  lrSocket.on('connect',()=>{
+    lrSocket.emit('join_room',{room_id:roomId,role,name});
+  });
+
+  lrSocket.on('room_joined',()=>{
+    toast('Joined room '+roomId+' as '+role);
+  });
 
   lrSocket.on('peer_joined',d=>{
+    lrPeerName=d.name||'Peer';
     const chip=document.getElementById('lrPeerChip');
-    chip.textContent=(d.role==='candidate'?'🤟 ':'👔 ')+d.name+' joined';
+    chip.textContent=(d.role==='candidate'?'🤟 ':'👔 ')+lrPeerName+' joined';
     chip.className='lr-peer-chip online';
     document.getElementById('lrWaiting').classList.add('hidden');
-    toast(d.name+' joined the room!');
+    // Update nametag to show who you're looking at
+    document.getElementById('lrVidNametag').textContent=lrPeerName;
+    document.getElementById('lrVidOffAvatar').textContent=(lrPeerName[0]||'P').toUpperCase();
+    document.getElementById('lrVidOffName').textContent=lrPeerName+' — camera off';
+    toast(lrPeerName+' joined!');
+
+    // Initiator starts WebRTC (the one who creates the room)
     if(role==='candidate')lrStartWebRTC(true);
     else lrStartWebRTC(false);
   });
 
-  lrSocket.on('peer_left',d=>{
+  lrSocket.on('peer_left',()=>{
     const chip=document.getElementById('lrPeerChip');
     chip.textContent='Peer disconnected';chip.className='lr-peer-chip offline';
     toast('The other person disconnected.');
+    // Show camera-off overlay
+    document.getElementById('lrVidOff').classList.add('show');
   });
 
-  // Candidate receives sign gesture event (for main panel display)
-  lrSocket.on('gesture_event',d=>{
-    const g=G.find(x=>x.id===d.gesture);
-    if(role==='interviewer'){
-      // Interviewer sees & hears candidate sign
-      lrUpdateInterviewerDisplay(g?.icon||'🤟',d.en,d.ta);
-      if(lrAutoSpeak)lrSpeak(d.en,d.ta,null);
-      lrIvAddMsg('candidate','Candidate',d.en+(d.ta?' / '+d.ta:''));
-    }
-  });
-
-  // Interviewer speech arrives at candidate
-  lrSocket.on('interviewer_speech_event',d=>{
-    if(role==='candidate'){
-      // Show incoming interviewer message
-      const card=document.getElementById('lrIICard');
-      const txt=document.getElementById('lrIIText');
-      const ind=document.getElementById('lrIISpeaking');
-      if(card){card.style.display='block';txt.textContent=d.text;}
-      if(!d.textOnly){
-        // Speak the interviewer's words to candidate
-        speechSynthesis.cancel();
-        const u=new SpeechSynthesisUtterance(d.text);
-        u.lang='en-IN';u.rate=0.95;u.volume=1;
-        if(ind)ind.classList.add('show');
-        u.onend=()=>{if(ind)ind.classList.remove('show');};
-        speechSynthesis.speak(u);
-        toast('Interviewer is speaking…');
-      }else{
-        toast('Interviewer: '+d.text);
-      }
-    }
-  });
-
+  // WebRTC signalling
   lrSocket.on('webrtc_offer',async d=>{
     if(!lrPC)lrInitPC();
     await lrPC.setRemoteDescription(new RTCSessionDescription(d.sdp));
@@ -1332,84 +1420,125 @@ function lrStartSession(roomId,role,name){
     await lrPC.setLocalDescription(answer);
     lrSocket.emit('webrtc_answer',{room_id:roomId,sdp:lrPC.localDescription});
   });
-  lrSocket.on('webrtc_answer',async d=>{if(lrPC)await lrPC.setRemoteDescription(new RTCSessionDescription(d.sdp));});
-  lrSocket.on('webrtc_ice',async d=>{try{if(lrPC&&d.candidate)await lrPC.addIceCandidate(new RTCIceCandidate(d.candidate));}catch{}});
-}
 
-// ─── CAMERA INIT ───
+  lrSocket.on('webrtc_answer',async d=>{
+    if(lrPC)await lrPC.setRemoteDescription(new RTCSessionDescription(d.sdp));
+  });
 
-async function lrInitCamera(role){
-  const ld=document.getElementById('lrCamLd');ld.style.display='flex';
-  document.getElementById('lrCamTxt').textContent='Starting camera…';
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({video:{width:1280,height:720,facingMode:'user'},audio:true});
-    lrLocalStream=stream;
+  lrSocket.on('webrtc_ice',async d=>{
+    try{if(lrPC&&d.candidate)await lrPC.addIceCandidate(new RTCIceCandidate(d.candidate));}catch{}
+  });
 
-    // PIP local video (both roles)
-    const local=document.getElementById('lrLocalVid');local.srcObject=stream;
-
-    if(role==='candidate'){
-      // Candidate: feed local video to MediaPipe gesture detection
-      const vid=document.getElementById('lrVid');vid.srcObject=stream;
-      const cvs=document.getElementById('lrCvs');cvs.style.display='block';
-
-      // Remote video = interviewer
-      document.getElementById('lrRemoteVid').style.display='block';
-
-      await new Promise(res=>{vid.onloadedmetadata=res;});
-      const mp=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
-      mp.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:0.72,minTrackingConfidence:0.65});
-      mp.onResults(lrOnResults);
-      const cam=new Camera(vid,{onFrame:async()=>{if(lrActive&&lrRole==='candidate')await mp.send({image:vid});},width:640,height:480});
-      await cam.start();
-      document.getElementById('lrCDot').className='lr-cdot ready';
-      document.getElementById('lrCamStatusTxt').textContent='Camera active — sign a gesture';
-    }else{
-      // Interviewer: main video shows candidate remote feed
-      document.getElementById('lrRemoteVid').style.display='block';
-      document.getElementById('lrCvs').style.display='none';
-      document.getElementById('lrCDot').className='lr-cdot ready';
-      document.getElementById('lrCamStatusTxt').textContent='Camera active';
+  // Candidate's sign gesture arrives at interviewer
+  lrSocket.on('gesture_event',d=>{
+    const g=G.find(x=>x.id===d.gesture);
+    if(role==='interviewer'){
+      lrUpdateInterviewerDisplay(g?.icon||'🤟',d.en,d.ta);
+      if(lrAutoSpeak)lrSpeak(d.en,d.ta,null);
+      lrIvAddMsg('candidate',lrPeerName||'Candidate',d.en+(d.ta?' / '+d.ta:''));
     }
-    ld.style.display='none';
-    lrCamStarted=true;
-  }catch(e){
-    ld.style.display='none';
-    document.getElementById('lrCamStatusTxt').textContent='⚠ Camera error: '+e.message;
-  }
+  });
+
+  // Interviewer's typed/spoken message arrives at candidate
+  lrSocket.on('interviewer_speech_event',d=>{
+    if(role==='candidate'){
+      const card=document.getElementById('lrIICard');
+      const txt=document.getElementById('lrIIText');
+      const ind=document.getElementById('lrIISpeaking');
+      if(card)card.style.display='block';
+      if(txt)txt.textContent=d.text;
+      if(!d.textOnly){
+        speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(d.text);u.lang='en-IN';u.rate=0.95;u.volume=1;
+        if(ind)ind.classList.add('show');
+        u.onend=()=>{if(ind)ind.classList.remove('show');};
+        speechSynthesis.speak(u);
+        toast('Interviewer is speaking…');
+      }else{toast('Interviewer: '+d.text);}
+    }
+  });
 }
 
-// ─── WebRTC ───
-
+// ─── WebRTC PEER CONNECTION ───
 function lrInitPC(){
-  lrPC=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
-  lrPC.onicecandidate=e=>{if(e.candidate)lrSocket.emit('webrtc_ice',{room_id:lrRoomId,candidate:e.candidate});};
+  lrPC=new RTCPeerConnection(ICE_SERVERS);
+
+  // Add local tracks (video + audio) to the peer connection
+  // This is what sends our camera/mic to the remote peer
+  if(lrLocalStream){
+    lrLocalStream.getTracks().forEach(track=>{
+      lrPC.addTrack(track,lrLocalStream);
+      console.log('Added local track:',track.kind,track.label);
+    });
+  }
+
+  // ICE candidate handling
+  lrPC.onicecandidate=e=>{
+    if(e.candidate&&lrSocket&&lrRoomId){
+      lrSocket.emit('webrtc_ice',{room_id:lrRoomId,candidate:e.candidate});
+    }
+  };
+
+  lrPC.oniceconnectionstatechange=()=>{
+    console.log('ICE state:',lrPC.iceConnectionState);
+    if(lrPC.iceConnectionState==='connected'||lrPC.iceConnectionState==='completed'){
+      toast('Video call connected ✓');
+      document.getElementById('lrCamLd').style.display='none';
+    }
+    if(lrPC.iceConnectionState==='disconnected'||lrPC.iceConnectionState==='failed'){
+      document.getElementById('lrVidOff').classList.add('show');
+    }
+  };
+
+  // ★ KEY: ontrack fires when we receive the remote peer's video/audio stream
   lrPC.ontrack=e=>{
+    console.log('Received remote track:',e.track.kind);
     const rv=document.getElementById('lrRemoteVid');
-    rv.srcObject=e.streams[0];
+    if(!rv.srcObject){
+      rv.srcObject=e.streams[0];
+    }else{
+      // Add any additional tracks (e.g. audio arriving separately)
+      e.streams[0].getTracks().forEach(t=>{
+        const existing=rv.srcObject.getTracks().find(x=>x.id===t.id);
+        if(!existing)rv.srcObject.addTrack(t);
+      });
+    }
+    // Ensure remote video plays (browsers may require unmuted or user gesture)
+    rv.play().catch(()=>{});
+    // Hide loading overlay once remote video arrives
     document.getElementById('lrCamLd').style.display='none';
+    document.getElementById('lrVidOff').classList.remove('show');
+    toast('Receiving peer video & audio ✓');
+  };
+
+  // Connection state changes
+  lrPC.onconnectionstatechange=()=>{
+    console.log('Connection state:',lrPC.connectionState);
+    if(lrPC.connectionState==='failed'){
+      toast('⚠ Connection failed — check network');
+    }
   };
 }
 
 async function lrStartWebRTC(isInitiator){
-  lrInitPC();
-  if(lrLocalStream)lrLocalStream.getTracks().forEach(t=>lrPC.addTrack(t,lrLocalStream));
+  lrInitPC();// Tracks already added inside lrInitPC()
   if(isInitiator){
-    const offer=await lrPC.createOffer();
+    // Create and send offer
+    const offer=await lrPC.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
     await lrPC.setLocalDescription(offer);
     lrSocket.emit('webrtc_offer',{room_id:lrRoomId,sdp:lrPC.localDescription});
   }
 }
 
-// ─── GESTURE DETECTION (candidate) ───
-
+// ─── GESTURE DETECTION (candidate in Live Room) ───
 function lrOnResults(res){
-  const canvas=document.getElementById('lrCvs');
-  if(!canvas)return;
+  const canvas=document.getElementById('lrCvs');if(!canvas)return;
   const ctx=canvas.getContext('2d'),vid=document.getElementById('lrVid');
-  canvas.width=vid.videoWidth;canvas.height=vid.videoHeight;ctx.clearRect(0,0,canvas.width,canvas.height);
+  canvas.width=vid.videoWidth||640;canvas.height=vid.videoHeight||480;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   if(!res.multiHandLandmarks?.length){
     document.getElementById('lrConfFill').style.width='0%';
+    document.getElementById('lrConfPct').textContent='0%';
     lrHoldCount=0;return;
   }
   const lm=res.multiHandLandmarks[0];
@@ -1453,18 +1582,23 @@ function lrProcess(id,en,ta,conf,icon){
   const c=conf!=null?conf:Math.min(lrHoldCount/(backendOk?3:20),1);
   const fill=document.getElementById('lrConfFill');const pct=document.getElementById('lrConfPct');
   if(fill)fill.style.width=(c*100)+'%';if(pct)pct.textContent=Math.round(c*100)+'%';
+  const cdot=document.getElementById('lrCDot');
+  if(cdot)cdot.className='lr-cdot detect';
   const thresh=backendOk?3:20;
   if(lrHoldCount===thresh){const now=Date.now();if(now-lrLastTrigTime>2000){lrLastTrigTime=now;lrTrigger(id,en,ta,icon);}}
 }
 
 function lrTrigger(id,en,ta,icon){
+  // Send via socket to remote
   if(lrSocket&&lrRoomId)lrSocket.emit('gesture_detected',{room_id:lrRoomId,gesture:id,en,ta,confidence:0.95});
+  // Update local candidate panel
   lrUpdateCandidateDisplay(icon,en,ta);
   if(lrAutoSpeak)lrSpeak(en,ta,null);
+  // Reset detection dot
+  setTimeout(()=>{const cdot=document.getElementById('lrCDot');if(cdot)cdot.className='lr-cdot ready';},1200);
 }
 
 // ─── DISPLAY UPDATES ───
-
 function lrUpdateCandidateDisplay(icon,en,ta){
   lrLastEn=en;lrLastTa=ta;
   const enEl=document.getElementById('lrCurEn');const taEl=document.getElementById('lrCurTa');
@@ -1497,7 +1631,6 @@ function lrRenderHist(){
 }
 
 // ─── MEDIA CONTROLS ───
-
 function lrToggleMute(){
   lrMicMuted=!lrMicMuted;
   if(lrLocalStream)lrLocalStream.getAudioTracks().forEach(t=>{t.enabled=!lrMicMuted;});
@@ -1505,6 +1638,10 @@ function lrToggleMute(){
   btn.textContent=lrMicMuted?'🔇':'🎙';btn.classList.toggle('muted',lrMicMuted);
   lbl.textContent=lrMicMuted?'Unmute':'Mute';
   document.getElementById('lrMutedBadge').classList.toggle('show',lrMicMuted);
+  // Update audio badge
+  const ab=document.getElementById('lrAudioBadge');
+  if(lrMicMuted){ab.classList.remove('active');ab.innerHTML='🔇 Muted';}
+  else{ab.classList.add('active');ab.innerHTML=`<div class="lr-audio-bars"><div class="lr-audio-bar"></div><div class="lr-audio-bar"></div><div class="lr-audio-bar"></div></div> Mic on`;}
   toast(lrMicMuted?'Microphone muted':'Microphone on');
 }
 
@@ -1514,15 +1651,13 @@ function lrToggleVideo(){
   const btn=document.getElementById('lrVidBtn'),lbl=document.getElementById('lrVidLabel');
   btn.textContent=lrVidOff_?'📵':'📷';btn.classList.toggle('vid-off',lrVidOff_);
   lbl.textContent=lrVidOff_?'Start':'Video';
-  const offOv=document.getElementById('lrVidOff');offOv.classList.toggle('show',lrVidOff_);
-  // Also hide/show pip
-  const pip=document.getElementById('lrPip');if(pip)pip.style.opacity=lrVidOff_?'0.4':'1';
+  // Dim PIP when own video is off
+  const pip=document.getElementById('lrPip');if(pip)pip.style.opacity=lrVidOff_?'0.35':'1';
   toast(lrVidOff_?'Camera off':'Camera on');
 }
 
 async function lrToggleScreenShare(){
   if(lrSharing){
-    // Stop sharing
     if(lrScreenStream){lrScreenStream.getTracks().forEach(t=>t.stop());lrScreenStream=null;}
     // Restore camera video track in peer connection
     if(lrPC&&lrLocalStream){
@@ -1530,28 +1665,31 @@ async function lrToggleScreenShare(){
       const sender=lrPC.getSenders().find(s=>s.track&&s.track.kind==='video');
       if(sender&&camTrack)sender.replaceTrack(camTrack);
     }
+    // Also restore PIP local preview
+    document.getElementById('lrLocalVid').srcObject=lrLocalStream;
     lrSharing=false;
     document.getElementById('lrShareBtn').textContent='🖥';document.getElementById('lrShareBtn').classList.remove('sharing');
     document.getElementById('lrShareLabel').textContent='Share';
     document.getElementById('lrShareBadge').classList.remove('show');
-    // Restore remote video as main
-    document.getElementById('lrRemoteVid').style.display='block';
     toast('Screen sharing stopped');
   }else{
     try{
       lrScreenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
       const screenTrack=lrScreenStream.getVideoTracks()[0];
-      // Replace video track in peer connection
+      // Replace video track sent to remote peer
       if(lrPC){
         const sender=lrPC.getSenders().find(s=>s.track&&s.track.kind==='video');
         if(sender)sender.replaceTrack(screenTrack);
       }
+      // Show screen in PIP so you can see what you're sharing
+      const screenPreview=new MediaStream([screenTrack]);
+      document.getElementById('lrLocalVid').srcObject=screenPreview;
       screenTrack.onended=()=>{if(lrSharing)lrToggleScreenShare();};
       lrSharing=true;
       document.getElementById('lrShareBtn').textContent='⏹';document.getElementById('lrShareBtn').classList.add('sharing');
       document.getElementById('lrShareLabel').textContent='Stop';
       document.getElementById('lrShareBadge').classList.add('show');
-      toast('Screen sharing started');
+      toast('Screen sharing started — peer can see your screen');
     }catch(e){toast('Screen share cancelled or not supported');}
   }
 }
@@ -1769,16 +1907,40 @@ function stMarkDone(){
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
 
-<!-- Backend note: Add this socket event to your Flask server -->
 <!--
-@socketio.on("interviewer_speech")
-def on_iv_speech(data):
-    room_id = data.get("room_id","").upper()
-    emit("interviewer_speech_event", {
-        "text": data.get("text"),
-        "name": data.get("name","Interviewer"),
-        "textOnly": data.get("textOnly", False)
-    }, to=room_id, skip_sid=request.sid)
+  ═══════════════════════════════════════════════════════════
+  FLASK / SOCKETIO BACKEND ADDITIONS NEEDED
+  Add these event handlers to your Python server:
+
+  @socketio.on("gesture_detected")
+  def on_gesture(data):
+      room_id = data.get("room_id","").upper()
+      emit("gesture_event", data, to=room_id, skip_sid=request.sid)
+
+  @socketio.on("interviewer_speech")
+  def on_iv_speech(data):
+      room_id = data.get("room_id","").upper()
+      emit("interviewer_speech_event", {
+          "text": data.get("text"),
+          "name": data.get("name","Interviewer"),
+          "textOnly": data.get("textOnly", False)
+      }, to=room_id, skip_sid=request.sid)
+
+  @socketio.on("webrtc_offer")
+  def on_offer(data):
+      room_id = data.get("room_id","").upper()
+      emit("webrtc_offer", {"sdp": data["sdp"]}, to=room_id, skip_sid=request.sid)
+
+  @socketio.on("webrtc_answer")
+  def on_answer(data):
+      room_id = data.get("room_id","").upper()
+      emit("webrtc_answer", {"sdp": data["sdp"]}, to=room_id, skip_sid=request.sid)
+
+  @socketio.on("webrtc_ice")
+  def on_ice(data):
+      room_id = data.get("room_id","").upper()
+      emit("webrtc_ice", {"candidate": data["candidate"]}, to=room_id, skip_sid=request.sid)
+  ═══════════════════════════════════════════════════════════
 -->
 </body>
 </html>
