@@ -1355,8 +1355,12 @@ function lrStartSession(roomId,role,name){
   },1000);
 
   // Start camera first, then connect socket
+  console.log('🎯 lrStartSession: Starting camera init...');
   lrInitCamera(role).then(()=>{
+    console.log('🎯 lrStartSession: Camera init complete, connecting socket...');
     lrConnectSocket(roomId,role,name);
+  }).catch(e=>{
+    console.error('🎯 lrStartSession: Camera init failed:', e);
   });
 }
 
@@ -1364,6 +1368,7 @@ function lrStartSession(roomId,role,name){
 // Acquires local video+audio stream, shows local pip, and sets up
 // gesture detection (candidate only). Remote video is populated by WebRTC.
 async function lrInitCamera(role){
+  console.log('🎯 lrInitCamera started with role:', role);
   const ld=document.getElementById('lrCamLd');ld.style.display='flex';
   document.getElementById('lrCamTxt').textContent='Requesting camera & microphone…';
   try{
@@ -1419,12 +1424,15 @@ async function lrInitCamera(role){
 
     ld.style.display='none';
     lrCamStarted=true;
+    console.log('🎯 lrInitCamera: Camera & microphone successfully initialized');
     toast('Camera & microphone ready');
   }catch(e){
+    console.error('🎯 lrInitCamera: Error initializing camera:', e);
     ld.style.display='none';
     document.getElementById('lrCamStatusTxt').textContent='⚠ '+e.message;
     // Try video only if audio fails
     try{
+      console.log('🎯 lrInitCamera: Attempting video-only fallback...');
       const vs=await navigator.mediaDevices.getUserMedia({video:true});
       lrLocalStream=vs;
       document.getElementById('lrLocalVid').srcObject=vs;
@@ -1433,8 +1441,10 @@ async function lrInitCamera(role){
         document.getElementById('lrCvs').style.display='block';
       }
       lrCamStarted=true;
+      console.log('🎯 lrInitCamera: Video-only mode initialized');
       toast('Camera only (no microphone): '+e.message);
     }catch(e2){
+      console.error('🎯 lrInitCamera: Video-only fallback also failed:', e2);
       toast('Camera error: '+e2.message);
     }
   }
@@ -1442,22 +1452,31 @@ async function lrInitCamera(role){
 
 // ─── SOCKET CONNECTION ───
 function lrConnectSocket(roomId,role,name){
+  console.log('🎯 lrConnectSocket called:', {roomId, role, name, lrRole});
   lrSocket=io(WS_URL,{transports:['websocket','polling']});
 
   lrSocket.on('connect',()=>{
+    console.log('🎯 Socket connected! Emitting join_room...');
     lrSocket.emit('join_room',{room_id:roomId,role,name});
   });
 
   lrSocket.on('room_joined',()=>{
+    console.log('🎯 Room joined event received');
     toast('Joined room '+lrRoomId+' as '+lrRole+' — Press Ctrl+M (mute), Ctrl+V (video), Ctrl+R (record), Ctrl+Y (hand)');
   });
 
   lrSocket.on('peer_joined',d=>{
+    console.log('🎯 peer_joined event received:', d);
     lrPeerName=d.name||'Peer';
     const chip=document.getElementById('lrPeerChip');
     chip.textContent=(d.role==='candidate'?'🤟 ':'👔 ')+lrPeerName+' joined';
     chip.className='lr-peer-chip online';
-    document.getElementById('lrWaiting').classList.add('hidden');
+    const waiting=document.getElementById('lrWaiting');
+    console.log('🎯 lrWaiting element:', waiting);
+    if(waiting){
+      waiting.classList.add('hidden');
+      console.log('🎯 Hidden waiting overlay, class list:', waiting.classList);
+    }
     // Update nametag to show who you're looking at
     document.getElementById('lrVidNametag').textContent=lrPeerName;
     document.getElementById('lrVidOffAvatar').textContent=(lrPeerName[0]||'P').toUpperCase();
@@ -1465,6 +1484,7 @@ function lrConnectSocket(roomId,role,name){
     toast(lrPeerName+' joined!');
 
     // Initiator starts WebRTC (the one who creates the room)
+    console.log('🎯 lrRole:', lrRole, 'Starting WebRTC with initiator:', lrRole==='candidate');
     if(lrRole==='candidate')lrStartWebRTC(true);
     else lrStartWebRTC(false);
   });
